@@ -1,15 +1,21 @@
-import { defineField, defineType } from 'sanity'
+import { defineField, defineType, type ReferenceFilterResolverContext } from 'sanity'
 
-const DIRECTOR_CATEGORIES = ['Music Videos', 'Ads', 'Short Films']
-const CINEMATOGRAPHER_CATEGORIES = [
-  'Music Videos',
-  'Ads',
-  'Documentaries',
-  'Short Films',
-  'Events',
-]
-const PHOTOGRAPHER_CATEGORIES = ['Portraits', 'Lifestyle', 'Editorial']
-const EVENT_TYPES = ['Corporate', 'Traditional Wedding', 'White Wedding', 'Parties', 'Funerals']
+type ProjectDocument = { discipline?: { _ref?: string } }
+
+/**
+ * Restricts the category picker to categories belonging to the discipline
+ * already chosen on this project, so an invalid pairing cannot be saved.
+ */
+export function categoryFilter({ document }: { document: ProjectDocument }) {
+  const disciplineId = document?.discipline?._ref
+  if (!disciplineId) {
+    return { filter: 'false' }
+  }
+  return {
+    filter: 'discipline._ref == $disciplineId',
+    params: { disciplineId },
+  }
+}
 
 export const project = defineType({
   name: 'project',
@@ -32,52 +38,20 @@ export const project = defineType({
     defineField({
       name: 'discipline',
       title: 'Discipline',
-      type: 'string',
-      options: {
-        list: [
-          { title: 'Director', value: 'director' },
-          { title: 'Cinematographer', value: 'cinematographer' },
-          { title: 'Photographer', value: 'photographer' },
-        ],
-        layout: 'radio',
-      },
+      type: 'reference',
+      to: [{ type: 'discipline' }],
       validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'category',
       title: 'Category',
-      type: 'string',
+      type: 'reference',
+      to: [{ type: 'category' }],
       options: {
-        list: [
-          ...new Set([
-            ...DIRECTOR_CATEGORIES,
-            ...CINEMATOGRAPHER_CATEGORIES,
-            ...PHOTOGRAPHER_CATEGORIES,
-          ]),
-        ],
+        filter: (context: ReferenceFilterResolverContext) =>
+          categoryFilter({ document: context.document as ProjectDocument }),
       },
-      hidden: ({ parent }) => !parent?.discipline,
-      validation: (Rule) =>
-        Rule.custom((value, context) => {
-          const discipline = (context.parent as { discipline?: string })?.discipline
-          if (!discipline) return true
-          if (!value) return 'Category is required'
-          const allowed =
-            discipline === 'director'
-              ? DIRECTOR_CATEGORIES
-              : discipline === 'cinematographer'
-                ? CINEMATOGRAPHER_CATEGORIES
-                : PHOTOGRAPHER_CATEGORIES
-          return allowed.includes(value) ? true : `Not a valid category for ${discipline}`
-        }),
-    }),
-    defineField({
-      name: 'eventType',
-      title: 'Event Type',
-      type: 'string',
-      options: { list: EVENT_TYPES },
-      hidden: ({ parent }) =>
-        !(parent?.discipline === 'cinematographer' && parent?.category === 'Events'),
+      validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'client',
@@ -104,17 +78,19 @@ export const project = defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
-      name: 'coverVideo',
-      title: 'Cover Video',
-      type: 'file',
-      description: 'Optional short looping/showreel clip for cards and hero use.',
-      options: { accept: 'video/*' },
+      name: 'mobileCoverImage',
+      title: 'Mobile Cover Image',
+      type: 'image',
+      options: { hotspot: true },
+      description:
+        'Optional. A portrait-friendly crop used on phones. Falls back to the cover image.',
     }),
     defineField({
-      name: 'externalVideoUrl',
-      title: 'External Video URL',
-      type: 'url',
-      description: 'Link to the full video hosted externally (e.g. Vimeo, YouTube unlisted).',
+      name: 'previewLoop',
+      title: 'Preview Loop',
+      type: 'file',
+      options: { accept: 'video/*' },
+      description: 'Optional short muted clip used for hover and hero previews.',
     }),
     defineField({
       name: 'gallery',
@@ -141,14 +117,8 @@ export const project = defineType({
       name: 'featured',
       title: 'Featured',
       type: 'boolean',
-      description: 'Show on the homepage featured selection.',
+      description: 'Show in the homepage featured selection.',
       initialValue: false,
-    }),
-    defineField({
-      name: 'order',
-      title: 'Order',
-      type: 'number',
-      description: 'Lower numbers appear first. Used to manually rearrange projects.',
     }),
     defineField({
       name: 'archived',
@@ -158,23 +128,15 @@ export const project = defineType({
       initialValue: false,
     }),
   ],
-  orderings: [
-    {
-      title: 'Display order',
-      name: 'orderAsc',
-      by: [{ field: 'order', direction: 'asc' }],
-    },
-    {
-      title: 'Year, newest first',
-      name: 'yearDesc',
-      by: [{ field: 'year', direction: 'desc' }],
-    },
-  ],
   preview: {
     select: {
       title: 'title',
-      subtitle: 'discipline',
+      discipline: 'discipline.title',
+      category: 'category.title',
       media: 'coverImage',
+    },
+    prepare({ title, discipline, category, media }) {
+      return { title, subtitle: [discipline, category].filter(Boolean).join(' · '), media }
     },
   },
 })
