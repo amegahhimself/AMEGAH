@@ -1,10 +1,12 @@
 import { defineField, defineType } from 'sanity'
+import { orderRankField, orderRankOrdering } from '@sanity/orderable-document-list'
 
 export const discipline = defineType({
   name: 'discipline',
   title: 'Discipline',
   type: 'document',
   description: 'A portfolio section, such as Director or Photographer.',
+  orderings: [orderRankOrdering],
   fields: [
     defineField({
       name: 'title',
@@ -44,6 +46,7 @@ export const discipline = defineType({
       initialValue: 'editorial',
       validation: (Rule) => Rule.required(),
     }),
+    orderRankField({ type: 'discipline' }),
   ],
   preview: {
     select: { title: 'title', subtitle: 'cadence', media: 'coverImage' },

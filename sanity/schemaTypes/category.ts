@@ -1,10 +1,12 @@
 import { defineField, defineType } from 'sanity'
+import { orderRankField, orderRankOrdering } from '@sanity/orderable-document-list'
 
 export const category = defineType({
   name: 'category',
   title: 'Category',
   type: 'document',
   description: 'A filter within a discipline, such as Music Videos.',
+  orderings: [orderRankOrdering],
   fields: [
     defineField({
       name: 'title',
@@ -34,6 +36,7 @@ export const category = defineType({
       description:
         'Optional. Use for sub-categories, e.g. set Events as the parent of Corporate.',
     }),
+    orderRankField({ type: 'category' }),
   ],
   preview: {
     select: { title: 'title', discipline: 'discipline.title', parent: 'parent.title' },

@@ -1,4 +1,5 @@
 import { defineField, defineType, type ReferenceFilterResolverContext } from 'sanity'
+import { orderRankField, orderRankOrdering } from '@sanity/orderable-document-list'
 
 type ProjectDocument = { discipline?: { _ref?: string } }
 
@@ -21,6 +22,7 @@ export const project = defineType({
   name: 'project',
   title: 'Project',
   type: 'document',
+  orderings: [orderRankOrdering],
   fields: [
     defineField({
       name: 'title',
@@ -127,6 +129,7 @@ export const project = defineType({
       description: 'Hide from the live site without deleting.',
       initialValue: false,
     }),
+    orderRankField({ type: 'project' }),
   ],
   preview: {
     select: {
