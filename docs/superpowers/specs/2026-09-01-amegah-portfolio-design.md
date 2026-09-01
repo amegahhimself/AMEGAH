@@ -94,9 +94,11 @@ text), `phone`, `email`, `instagramUrl`, plus:
 
 Every orderable type uses drag-and-drop ordering rather than a manual number
 field, so "rearrange featured projects" (brief §2) is a drag, not arithmetic.
-Intended package: `@sanity/orderable-document-list` — **confirm Sanity v5
-compatibility at implementation time**; if incompatible, fall back to an
-`order` number field surfaced in a custom list view.
+
+Package: `@sanity/orderable-document-list@2.0.23`. Compatibility verified
+against the installed stack — it requires `sanity: ^5 || ^6.0.0-0`,
+`react: ^19.2`, `styled-components: ^6.1`, and the project has Sanity 5.31.2,
+React 19.2.8, and styled-components 6 (installed by the Studio scaffold).
 
 ### 3.4 Migration note
 
