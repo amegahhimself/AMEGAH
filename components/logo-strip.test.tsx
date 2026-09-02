@@ -11,6 +11,11 @@ const withLogo: LogoRef = {
   url: 'https://example.com',
 }
 const withoutLogo: LogoRef = { _id: 'c2', name: 'Studio Two' }
+const logoNoUrl: LogoRef = {
+  _id: 'c3',
+  name: 'Studio Three',
+  logo: { asset: { _ref: 'image-b-400x200-png' } },
+}
 
 describe('LogoStrip', () => {
   it('shows both groups when both have entries', () => {
@@ -30,6 +35,22 @@ describe('LogoStrip', () => {
   it('still credits a name that has no logo uploaded', () => {
     render(<LogoStrip clients={[withoutLogo]} partners={[]} />)
     expect(screen.getByText('Studio Two')).toBeInTheDocument()
+  })
+
+  it('renders an entry with no website as plain text, not a dead link', () => {
+    render(<LogoStrip clients={[withoutLogo]} partners={[]} />)
+    expect(screen.getByText('Studio Two')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('link', { name: 'Studio Two' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('renders a logo with no website as an image, not a dead link', () => {
+    render(<LogoStrip clients={[logoNoUrl]} partners={[]} />)
+    expect(screen.getByAltText('Studio Three')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('link', { name: 'Studio Three' }),
+    ).not.toBeInTheDocument()
   })
 
   it('hides a group that has no entries', () => {
