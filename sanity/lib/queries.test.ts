@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ALL_PROJECT_SLUGS_QUERY,
   CATEGORIES_BY_DISCIPLINE_QUERY,
   DISCIPLINE_BY_SLUG_QUERY,
+  DISCIPLINE_PROJECT_REFS_QUERY,
   PROJECT_CARD_PROJECTION,
+  PROJECT_DETAIL_QUERY,
   projectListQuery,
 } from './queries'
 
@@ -73,5 +76,47 @@ describe('PROJECT_CARD_PROJECTION', () => {
 
   it('includes the image hotspot so crops respect the focal point', () => {
     expect(PROJECT_CARD_PROJECTION).toContain('hotspot')
+  })
+})
+
+describe('PROJECT_DETAIL_QUERY', () => {
+  it('looks up one non-archived project by slug', () => {
+    expect(PROJECT_DETAIL_QUERY).toContain('_type == "project"')
+    expect(PROJECT_DETAIL_QUERY).toContain('slug.current == $slug')
+    expect(PROJECT_DETAIL_QUERY).toContain('!archived')
+    expect(PROJECT_DETAIL_QUERY).toContain('[0]')
+  })
+
+  it('follows the Mux asset reference to the playback id', () => {
+    expect(PROJECT_DETAIL_QUERY).toContain('muxVideo.asset->')
+    expect(PROJECT_DETAIL_QUERY).toContain('playbackId')
+  })
+
+  it('returns gallery images with their alt text and captions', () => {
+    expect(PROJECT_DETAIL_QUERY).toContain('gallery')
+    expect(PROJECT_DETAIL_QUERY).toContain('alt')
+    expect(PROJECT_DETAIL_QUERY).toContain('caption')
+  })
+
+  it('resolves the credits the page shows', () => {
+    expect(PROJECT_DETAIL_QUERY).toContain('client->')
+    expect(PROJECT_DETAIL_QUERY).toContain('partners[]->')
+  })
+})
+
+describe('DISCIPLINE_PROJECT_REFS_QUERY', () => {
+  it('lists a discipline’s projects in the editor-defined order', () => {
+    expect(DISCIPLINE_PROJECT_REFS_QUERY).toContain(
+      'discipline->slug.current == $disciplineSlug',
+    )
+    expect(DISCIPLINE_PROJECT_REFS_QUERY).toContain('order(orderRank)')
+    expect(DISCIPLINE_PROJECT_REFS_QUERY).toContain('!archived')
+  })
+})
+
+describe('ALL_PROJECT_SLUGS_QUERY', () => {
+  it('lists every non-archived project slug for prerendering', () => {
+    expect(ALL_PROJECT_SLUGS_QUERY).toContain('_type == "project"')
+    expect(ALL_PROJECT_SLUGS_QUERY).toContain('!archived')
   })
 })

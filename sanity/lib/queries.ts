@@ -1,8 +1,10 @@
-export const IMAGE_PROJECTION = `{
-  asset,
+export const IMAGE_FIELDS = `asset,
   hotspot,
   "lqip": asset->metadata.lqip,
-  "aspectRatio": asset->metadata.dimensions.aspectRatio
+  "aspectRatio": asset->metadata.dimensions.aspectRatio`
+
+export const IMAGE_PROJECTION = `{
+  ${IMAGE_FIELDS}
 }`
 
 export const PROJECT_CARD_PROJECTION = `{
@@ -65,3 +67,33 @@ export const CATEGORIES_BY_DISCIPLINE_QUERY = `*[_type == "category" && discipli
   "slug": slug.current,
   "parentId": parent._ref
 }`
+
+export const PROJECT_DETAIL_QUERY = `*[_type == "project" && slug.current == $slug && !archived][0] {
+  _id,
+  title,
+  "slug": slug.current,
+  year,
+  description,
+  "coverImage": coverImage${IMAGE_PROJECTION},
+  "muxVideo": muxVideo.asset->{playbackId, assetId},
+  "gallery": gallery[]{
+    ${IMAGE_FIELDS},
+    alt,
+    caption
+  },
+  "discipline": discipline->{title, "slug": slug.current, cadence},
+  "category": category->{
+    title,
+    "slug": slug.current,
+    "parentSlug": parent->slug.current
+  },
+  "client": client->{name},
+  "partners": partners[]->{name}
+}`
+
+export const DISCIPLINE_PROJECT_REFS_QUERY = `*[_type == "project" && !archived && discipline->slug.current == $disciplineSlug] | order(orderRank) {
+  "slug": slug.current,
+  title
+}`
+
+export const ALL_PROJECT_SLUGS_QUERY = `*[_type == "project" && !archived].slug.current`
