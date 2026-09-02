@@ -4,7 +4,7 @@ import { Suspense } from 'react'
 
 import { ProjectGallery } from '@/components/project-gallery'
 import { ProjectHero } from '@/components/project-hero'
-import { Prose } from '@/components/prose'
+import { Prose, hasProse } from '@/components/prose'
 import { adjacentProjects } from '@/lib/adjacent-projects'
 import { creditLine } from '@/lib/credits'
 import { getDisciplineProjectRefs, getProjectBySlug } from '@/sanity/lib/content'
@@ -87,7 +87,7 @@ async function ProjectView({ params }: Pick<PageProps<'/work/[slug]'>, 'params'>
           </dl>
         )}
 
-        {project.description ? (
+        {hasProse(project.description) ? (
           <div className="mt-12">
             <Prose value={project.description} />
           </div>
