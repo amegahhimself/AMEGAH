@@ -10,10 +10,14 @@ export function ProjectCard({
   project,
   index,
   cadence,
+  sizes,
 }: {
   project: ProjectCardData
   index: number
   cadence: Cadence
+  /** Overrides the cadence's default `sizes` when the card sits in a grid
+   *  whose column widths differ from that discipline's own grid. */
+  sizes?: string
 }) {
   const layout = cadenceLayout(cadence)
   const image = project.coverImage
@@ -26,7 +30,7 @@ export function ProjectCard({
             src={urlFor(image).width(1600).auto('format').url()}
             alt={project.title}
             fill
-            sizes={layout.sizes}
+            sizes={sizes ?? layout.sizes}
             placeholder={image.lqip ? 'blur' : 'empty'}
             blurDataURL={image.lqip}
             style={{ objectPosition: hotspotPosition(image) }}
