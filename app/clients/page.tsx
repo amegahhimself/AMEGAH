@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 
-import { LogoStrip } from '@/components/logo-strip'
+import { LogoGroups } from '@/components/logo-strip'
 import { getClients, getPartners } from '@/sanity/lib/content'
 
 export function generateMetadata() {
@@ -33,15 +33,18 @@ async function ClientsView() {
       </h1>
 
       {/*
-        LogoStrip already renders the two labelled sections, the logo grids and
-        the outbound links, and hides a group that has no entries. This check
-        exists only so the page says something when BOTH are empty, rather than
-        leaving a heading over nothing.
+        LogoGroups renders the two labelled sections, the logo grids and the
+        outbound links, and hides a group that has no entries — without the
+        homepage band's own rule and padding, which this page already supplies.
+        This check exists only so the page says something when BOTH are empty,
+        rather than leaving a heading over nothing.
       */}
       {isEmpty ? (
         <p className="mt-12 text-ink-muted">Client list coming soon.</p>
       ) : (
-        <LogoStrip clients={clients} partners={partners} />
+        <div className="mt-16">
+          <LogoGroups clients={clients} partners={partners} />
+        </div>
       )}
     </section>
   )

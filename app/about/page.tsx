@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import { Suspense } from 'react'
 
-import { Prose } from '@/components/prose'
+import { Prose, hasProse } from '@/components/prose'
 import { hotspotPosition } from '@/lib/card-meta'
 import { getSiteSettings } from '@/sanity/lib/content'
 import { urlFor } from '@/sanity/lib/image'
@@ -26,6 +26,7 @@ export default function AboutPage() {
 async function AboutView() {
   const settings = await getSiteSettings().catch(() => null)
   const headshot = settings?.headshot
+  const bio = settings?.bio
 
   return (
     <section className="px-6 py-20 md:py-28">
@@ -55,8 +56,9 @@ async function AboutView() {
 
         <div className="flex-1">
           {settings?.role && <p className="index-meta mb-6">{settings.role}</p>}
-          {settings?.bio ? (
-            <Prose value={settings.bio} />
+          {/* Spec §6.5: the bio is set in serif at the ~65ch measure. */}
+          {hasProse(bio) ? (
+            <Prose value={bio} serif />
           ) : (
             // A missing biography reads as an unfinished page unless it says
             // something; the client may publish before writing this.
