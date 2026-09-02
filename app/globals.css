@@ -128,3 +128,47 @@
     @apply font-sans;
   }
 }
+
+:root {
+  --ground: #0a0a0a;
+  --ink: #ffffff;
+  --ink-soft: #d8d8d3;
+  --ink-muted: #8a8a85;
+  --hairline: rgb(255 255 255 / 0.12);
+
+  --measure: 65ch;
+}
+
+@theme inline {
+  --color-ground: var(--ground);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-muted: var(--ink-muted);
+  --color-hairline: var(--hairline);
+  --font-display: var(--font-fraunces);
+}
+
+body {
+  background-color: var(--ground);
+  color: var(--ink);
+}
+
+/* The archival index device: 01 — Music Video — 2025 */
+.index-meta {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
