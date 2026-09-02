@@ -9,9 +9,7 @@ afterEach(() => {
 
 // Mock missing DOM APIs for Sanity compatibility
 if (typeof global.CSS === 'undefined') {
-  ;(global.CSS as any) = {
-    supports: () => false,
-  }
+  global.CSS = { supports: () => false } as unknown as typeof global.CSS
 }
 
 // jsdom doesn't implement matchMedia. Default to "no preference" so

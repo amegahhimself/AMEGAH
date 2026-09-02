@@ -63,7 +63,39 @@ export const siteSettings = defineType({
       name: 'bio',
       title: 'Biography',
       type: 'array',
-      of: [{ type: 'block' }],
+      // Restricted to what the About page actually renders: without
+      // per-style handling, heading styles and lists would render unstyled
+      // by Tailwind's preflight (markerless lists, a stray heading on the
+      // page). Only the normal paragraph style is offered; the link
+      // annotation is kept and rendered underlined, matching
+      // `project.description` since both are rendered by the same component.
+      of: [
+        {
+          type: 'block',
+          styles: [{ title: 'Normal', value: 'normal' }],
+          lists: [],
+          marks: {
+            decorators: [
+              { title: 'Strong', value: 'strong' },
+              { title: 'Emphasis', value: 'em' },
+            ],
+            annotations: [
+              {
+                type: 'object',
+                name: 'link',
+                fields: [
+                  defineField({
+                    type: 'url',
+                    name: 'href',
+                    title: 'URL',
+                    validation: (Rule) => Rule.required(),
+                  }),
+                ],
+              },
+            ],
+          },
+        },
+      ],
     }),
     defineField({
       name: 'phone',

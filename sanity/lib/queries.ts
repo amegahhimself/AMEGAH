@@ -49,7 +49,9 @@ export const DISCIPLINES_QUERY = `*[_type == "discipline"] | order(orderRank) {
 export const SITE_SETTINGS_QUERY = `*[_type == "siteSettings"][0] {
   name,
   role,
-  headshot,
+  "headshot": headshot{
+    ${IMAGE_FIELDS}
+  },
   bio,
   phone,
   email,

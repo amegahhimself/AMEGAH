@@ -60,3 +60,24 @@ describe('siteSettings schema', () => {
     expect(field('instagramUrl')?.type).toBe('url')
   })
 })
+
+describe('siteSettings bio', () => {
+  it('offers only the normal paragraph style, matching what the page renders', () => {
+    const bio = field('bio') as unknown as {
+      of?: { styles?: { value: string }[]; lists?: unknown[] }[]
+    }
+    expect(bio.of?.[0]?.styles?.map((s) => s.value)).toEqual(['normal'])
+  })
+
+  it('offers no list styles', () => {
+    const bio = field('bio') as unknown as { of?: { lists?: unknown[] }[] }
+    expect(bio.of?.[0]?.lists).toEqual([])
+  })
+
+  it('keeps the link annotation', () => {
+    const bio = field('bio') as unknown as {
+      of?: { marks?: { annotations?: { name: string }[] } }[]
+    }
+    expect(bio.of?.[0]?.marks?.annotations?.map((a) => a.name)).toContain('link')
+  })
+})

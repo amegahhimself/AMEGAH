@@ -50,6 +50,31 @@ function Group({ title, entries }: { title: string; entries: LogoRef[] }) {
   )
 }
 
+/**
+ * The two labelled logo groups, with no chrome of their own.
+ *
+ * Use this inside a page that already provides its own heading and padding —
+ * `LogoStrip` below is a full-width homepage band and would double the
+ * horizontal padding and float a stray rule if nested.
+ */
+export function LogoGroups({
+  clients,
+  partners,
+}: {
+  clients: LogoRef[]
+  partners: LogoRef[]
+}) {
+  if (clients.length === 0 && partners.length === 0) return null
+
+  return (
+    <div className="flex flex-col gap-16">
+      <Group title="Clients" entries={clients} />
+      <Group title="Partners" entries={partners} />
+    </div>
+  )
+}
+
+/** The homepage band: the logo groups plus their own rule and page padding. */
 export function LogoStrip({
   clients,
   partners,
@@ -60,9 +85,8 @@ export function LogoStrip({
   if (clients.length === 0 && partners.length === 0) return null
 
   return (
-    <section className="flex flex-col gap-16 border-t border-hairline px-6 py-24">
-      <Group title="Clients" entries={clients} />
-      <Group title="Partners" entries={partners} />
+    <section className="border-t border-hairline px-6 py-24">
+      <LogoGroups clients={clients} partners={partners} />
     </section>
   )
 }

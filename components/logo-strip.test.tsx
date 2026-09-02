@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import { LogoStrip } from './logo-strip'
+import { LogoGroups, LogoStrip } from './logo-strip'
 import type { LogoRef } from '@/sanity/lib/content'
 
 const withLogo: LogoRef = {
@@ -60,6 +60,36 @@ describe('LogoStrip', () => {
 
   it('renders nothing when there are neither clients nor partners', () => {
     const { container } = render(<LogoStrip clients={[]} partners={[]} />)
+    expect(container).toBeEmptyDOMElement()
+  })
+
+  it('carries the homepage band’s own rule and page padding', () => {
+    const { container } = render(<LogoStrip clients={[withLogo]} partners={[]} />)
+    const className = container.firstElementChild?.className ?? ''
+    expect(className).toContain('border-t')
+    expect(className).toContain('px-6')
+  })
+})
+
+// The Clients page supplies its own heading and page padding, so it renders
+// the groups without the band chrome. Nesting the full band there doubled the
+// horizontal padding and floated an inset rule across the middle of the page.
+describe('LogoGroups', () => {
+  it('renders the groups', () => {
+    render(<LogoGroups clients={[withLogo]} partners={[]} />)
+    expect(screen.getByText('Clients')).toBeInTheDocument()
+    expect(screen.getByAltText('Studio One')).toBeInTheDocument()
+  })
+
+  it('brings no rule or page padding of its own', () => {
+    const { container } = render(<LogoGroups clients={[withLogo]} partners={[]} />)
+    const className = container.firstElementChild?.className ?? ''
+    expect(className).not.toContain('border-t')
+    expect(className).not.toContain('px-6')
+  })
+
+  it('renders nothing when there are neither clients nor partners', () => {
+    const { container } = render(<LogoGroups clients={[]} partners={[]} />)
     expect(container).toBeEmptyDOMElement()
   })
 })
