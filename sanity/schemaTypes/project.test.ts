@@ -39,3 +39,13 @@ describe('categoryFilter', () => {
     })
   })
 })
+
+describe('project video field', () => {
+  it('stores video as a Mux asset so the client uploads it in Studio', () => {
+    expect(field('muxVideo')?.type).toBe('mux.video')
+  })
+
+  it('keeps previewLoop separate from the full video', () => {
+    expect(field('previewLoop')?.type).toBe('file')
+  })
+})

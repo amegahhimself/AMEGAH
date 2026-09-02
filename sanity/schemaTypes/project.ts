@@ -88,6 +88,13 @@ export const project = defineType({
         'Optional. A portrait-friendly crop used on phones. Falls back to the cover image.',
     }),
     defineField({
+      name: 'muxVideo',
+      title: 'Video',
+      type: 'mux.video',
+      description:
+        'The full film. Uploaded straight to Mux — drag a file in and it streams itself.',
+    }),
+    defineField({
       name: 'previewLoop',
       title: 'Preview Loop',
       type: 'file',
