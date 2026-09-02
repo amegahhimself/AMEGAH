@@ -20,7 +20,7 @@ export function ProjectCard({
 
   return (
     <Link href={`/work/${project.slug}`} className="group block">
-      <div className={`relative overflow-hidden bg-white/5 ${layout.aspect}`}>
+      <div className={`relative overflow-hidden bg-hairline ${layout.aspect}`}>
         {image?.asset ? (
           <Image
             src={urlFor(image).width(1600).auto('format').url()}
