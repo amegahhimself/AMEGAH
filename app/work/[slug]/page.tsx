@@ -1,10 +1,10 @@
-import { PortableText, type PortableTextComponents } from '@portabletext/react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 
 import { ProjectGallery } from '@/components/project-gallery'
 import { ProjectHero } from '@/components/project-hero'
+import { Prose } from '@/components/prose'
 import { adjacentProjects } from '@/lib/adjacent-projects'
 import { creditLine } from '@/lib/credits'
 import { getDisciplineProjectRefs, getProjectBySlug } from '@/sanity/lib/content'
@@ -30,25 +30,6 @@ export default function ProjectPage({ params }: PageProps<'/work/[slug]'>) {
       <ProjectView params={params} />
     </Suspense>
   )
-}
-
-// The schema restricts the description block to the normal style and the
-// link annotation (sanity/schemaTypes/project.ts), so a link is the only
-// mark this needs to style — an underline via the existing tokens, no
-// ad-hoc colour.
-const descriptionComponents: PortableTextComponents = {
-  marks: {
-    link: ({ value, children }) => (
-      <a
-        href={value?.href}
-        className="underline underline-offset-2 hover:text-ink"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {children}
-      </a>
-    ),
-  },
 }
 
 function ProjectFallback() {
@@ -107,8 +88,8 @@ async function ProjectView({ params }: Pick<PageProps<'/work/[slug]'>, 'params'>
         )}
 
         {project.description ? (
-          <div className="mt-12 max-w-[var(--measure)] text-ink-soft [&_p]:mt-4">
-            <PortableText value={project.description} components={descriptionComponents} />
+          <div className="mt-12">
+            <Prose value={project.description} />
           </div>
         ) : null}
 
