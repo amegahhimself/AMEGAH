@@ -1,12 +1,23 @@
+export const IMAGE_PROJECTION = `{
+  asset,
+  hotspot,
+  "lqip": asset->metadata.lqip,
+  "aspectRatio": asset->metadata.dimensions.aspectRatio
+}`
+
 export const PROJECT_CARD_PROJECTION = `{
   _id,
   title,
   "slug": slug.current,
   year,
-  coverImage,
-  mobileCoverImage,
+  "coverImage": coverImage${IMAGE_PROJECTION},
+  "mobileCoverImage": mobileCoverImage${IMAGE_PROJECTION},
   "discipline": discipline->{title, "slug": slug.current, cadence},
-  "category": category->{title, "slug": slug.current}
+  "category": category->{
+    title,
+    "slug": slug.current,
+    "parentSlug": parent->slug.current
+  }
 }`
 
 export function projectListQuery({
@@ -38,4 +49,19 @@ export const SITE_SETTINGS_QUERY = `*[_type == "siteSettings"][0] {
   phone,
   email,
   instagramUrl
+}`
+
+export const DISCIPLINE_BY_SLUG_QUERY = `*[_type == "discipline" && slug.current == $slug][0] {
+  _id,
+  title,
+  "slug": slug.current,
+  description,
+  cadence
+}`
+
+export const CATEGORIES_BY_DISCIPLINE_QUERY = `*[_type == "category" && discipline->slug.current == $disciplineSlug] | order(orderRank) {
+  _id,
+  title,
+  "slug": slug.current,
+  "parentId": parent._ref
 }`
