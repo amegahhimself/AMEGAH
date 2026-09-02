@@ -20,37 +20,39 @@ export function SiteHeader({ disciplines }: { disciplines: NavDiscipline[] }) {
   ]
 
   return (
-    <header className="sticky top-0 z-50 border-b border-hairline bg-ground/80 backdrop-blur">
-      <div className="flex items-center justify-between px-6 py-5">
-        <Link href="/" className="font-display text-lg tracking-tight text-ink">
-          Amegah
-        </Link>
+    <>
+      <header className="sticky top-0 z-50 border-b border-hairline bg-ground/80 backdrop-blur">
+        <div className="flex items-center justify-between px-6 py-5">
+          <Link href="/" className="font-display text-lg tracking-tight text-ink">
+            Amegah
+          </Link>
 
-        <nav className="hidden gap-8 md:flex">
-          {links.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="index-meta transition-colors hover:text-ink"
-            >
-              {link.title}
-            </Link>
-          ))}
-        </nav>
+          <nav className="hidden gap-8 md:flex">
+            {links.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="index-meta transition-colors hover:text-ink"
+              >
+                {link.title}
+              </Link>
+            ))}
+          </nav>
 
-        <button
-          type="button"
-          aria-label="Menu"
-          aria-expanded={open}
-          onClick={() => setOpen((value) => !value)}
-          className="index-meta md:hidden"
-        >
-          {open ? 'Close' : 'Menu'}
-        </button>
-      </div>
+          <button
+            type="button"
+            aria-label="Menu"
+            aria-expanded={open}
+            onClick={() => setOpen((value) => !value)}
+            className="index-meta md:hidden"
+          >
+            {open ? 'Close' : 'Menu'}
+          </button>
+        </div>
+      </header>
 
       {open && (
-        <nav className="flex flex-col gap-6 px-6 pb-10 pt-4 md:hidden">
+        <nav className="fixed inset-0 z-40 flex flex-col gap-6 overflow-y-auto bg-ground px-6 pb-10 pt-24 md:hidden">
           {links.map((link) => (
             <Link
               key={link.href}
@@ -63,6 +65,6 @@ export function SiteHeader({ disciplines }: { disciplines: NavDiscipline[] }) {
           ))}
         </nav>
       )}
-    </header>
+    </>
   )
 }
