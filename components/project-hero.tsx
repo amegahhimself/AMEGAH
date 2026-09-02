@@ -11,7 +11,7 @@ export function ProjectHero({ project }: { project: ProjectDetail }) {
 
   if (playbackId) {
     return (
-      <div className="bg-hairline">
+      <div className="relative aspect-video w-full bg-hairline">
         <ProjectVideo
           playbackId={playbackId}
           title={project.title}

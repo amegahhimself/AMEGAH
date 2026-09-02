@@ -1,4 +1,4 @@
-import { PortableText } from '@portabletext/react'
+import { PortableText, type PortableTextComponents } from '@portabletext/react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
@@ -7,16 +7,12 @@ import { ProjectGallery } from '@/components/project-gallery'
 import { ProjectHero } from '@/components/project-hero'
 import { adjacentProjects } from '@/lib/adjacent-projects'
 import { creditLine } from '@/lib/credits'
-import {
-  getAllProjectSlugs,
-  getDisciplineProjectRefs,
-  getProjectBySlug,
-} from '@/sanity/lib/content'
+import { getDisciplineProjectRefs, getProjectBySlug } from '@/sanity/lib/content'
 
-export async function generateStaticParams() {
-  const slugs = await getAllProjectSlugs()
-  return slugs.map((slug) => ({ slug }))
-}
+// No generateStaticParams: this route's params come from CMS content, and a
+// CMS-driven route must not depend on content existing at build time — an
+// empty dataset would hard-error the build under Cache Components. Params are
+// runtime data instead; the <Suspense> boundary below supplies the static shell.
 
 export async function generateMetadata({ params }: PageProps<'/work/[slug]'>) {
   const { slug } = await params
@@ -36,6 +32,25 @@ export default function ProjectPage({ params }: PageProps<'/work/[slug]'>) {
   )
 }
 
+// The schema restricts the description block to the normal style and the
+// link annotation (sanity/schemaTypes/project.ts), so a link is the only
+// mark this needs to style — an underline via the existing tokens, no
+// ad-hoc colour.
+const descriptionComponents: PortableTextComponents = {
+  marks: {
+    link: ({ value, children }) => (
+      <a
+        href={value?.href}
+        className="underline underline-offset-2 hover:text-ink"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {children}
+      </a>
+    ),
+  },
+}
+
 function ProjectFallback() {
   return (
     <div>
@@ -51,7 +66,7 @@ async function ProjectView({ params }: Pick<PageProps<'/work/[slug]'>, 'params'>
   const { slug } = await params
   const project = await getProjectBySlug(slug)
 
-  if (!project) {
+  if (!project || !project.discipline) {
     notFound()
   }
 
@@ -93,7 +108,7 @@ async function ProjectView({ params }: Pick<PageProps<'/work/[slug]'>, 'params'>
 
         {project.description ? (
           <div className="mt-12 max-w-[var(--measure)] text-ink-soft [&_p]:mt-4">
-            <PortableText value={project.description} />
+            <PortableText value={project.description} components={descriptionComponents} />
           </div>
         ) : null}
 

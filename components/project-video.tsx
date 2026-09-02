@@ -28,7 +28,13 @@ export function ProjectVideo({
       autoPlay={false}
       metadata={{ video_title: title }}
       accentColor="#ffffff"
-      style={{ width: '100%', aspectRatio: '16 / 9' }}
+      // display: 'block' matters before the custom element upgrades: an
+      // unrecognised element defaults to `inline`, and width/aspect-ratio
+      // don't apply to inline non-replaced boxes. The parent in
+      // ProjectHero already reserves the 16:9 box via aspect-video, so this
+      // just makes the player fill it instead of collapsing to zero height
+      // in between.
+      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }}
     />
   )
 }

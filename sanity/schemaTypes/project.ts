@@ -120,7 +120,39 @@ export const project = defineType({
       name: 'description',
       title: 'Description',
       type: 'array',
-      of: [{ type: 'block' }],
+      // Restricted to what the project page actually renders: without
+      // per-style handling, heading styles and lists would render unstyled
+      // by Tailwind's preflight (markerless lists, a second <h1> on the
+      // page). Only the normal paragraph style is offered; the link
+      // annotation is kept and rendered underlined by the page's
+      // `descriptionComponents` (app/work/[slug]/page.tsx).
+      of: [
+        {
+          type: 'block',
+          styles: [{ title: 'Normal', value: 'normal' }],
+          lists: [],
+          marks: {
+            decorators: [
+              { title: 'Strong', value: 'strong' },
+              { title: 'Emphasis', value: 'em' },
+            ],
+            annotations: [
+              {
+                type: 'object',
+                name: 'link',
+                fields: [
+                  defineField({
+                    type: 'url',
+                    name: 'href',
+                    title: 'URL',
+                    validation: (Rule) => Rule.required(),
+                  }),
+                ],
+              },
+            ],
+          },
+        },
+      ],
     }),
     defineField({
       name: 'featured',

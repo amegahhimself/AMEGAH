@@ -127,7 +127,11 @@ export type ProjectDetail = {
   coverImage?: SanityImage
   muxVideo?: MuxVideo | null
   gallery?: GalleryImage[]
-  discipline: { title: string; slug: string; cadence: Cadence }
+  // A dangling reference (the client deleted the discipline a project still
+  // points to) makes GROQ's discipline-> return null. Sanity's Rule.required()
+  // only guards creation time, not later deletion of the referenced document,
+  // so this must be nullable and every consumer must guard it.
+  discipline: { title: string; slug: string; cadence: Cadence } | null
   category: { title: string; slug: string; parentSlug: string | null } | null
   client?: { name: string } | null
   partners?: { name: string }[] | null
@@ -137,7 +141,14 @@ export async function getProjectBySlug(slug: string): Promise<ProjectDetail | nu
   'use cache'
   // Dereferences discipline, category, client, partners and the Mux asset,
   // so a change to any of them must invalidate this page.
-  cacheTag(TAGS.project, TAGS.discipline, TAGS.category, TAGS.client, TAGS.partner)
+  cacheTag(
+    TAGS.project,
+    TAGS.discipline,
+    TAGS.category,
+    TAGS.client,
+    TAGS.partner,
+    TAGS.muxVideoAsset,
+  )
   cacheLife('max')
   return client.fetch<ProjectDetail | null>(PROJECT_DETAIL_QUERY, { slug })
 }
