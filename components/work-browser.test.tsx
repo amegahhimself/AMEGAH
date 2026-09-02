@@ -1,15 +1,12 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { WorkBrowser } from './work-browser'
 import type { CategoryNode } from '@/lib/categories'
 import type { ProjectCardData } from '@/sanity/lib/content'
 
-const replace = vi.fn()
-
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ replace }),
   usePathname: () => '/cinematographer',
 }))
 
@@ -43,7 +40,15 @@ const projects = [
 ]
 
 describe('WorkBrowser', () => {
-  beforeEach(() => replace.mockClear())
+  let replaceState: ReturnType<typeof vi.spyOn>
+
+  beforeEach(() => {
+    replaceState = vi.spyOn(window.history, 'replaceState').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    replaceState.mockRestore()
+  })
 
   it('shows every project when unfiltered', () => {
     render(
@@ -74,7 +79,7 @@ describe('WorkBrowser', () => {
     expect(screen.queryByText('gala-night')).not.toBeInTheDocument()
   })
 
-  it('syncs the chosen filter to the URL without scrolling the page', async () => {
+  it('syncs the chosen filter to the URL without triggering a navigation', async () => {
     render(
       <WorkBrowser
         projects={projects}
@@ -85,7 +90,7 @@ describe('WorkBrowser', () => {
       />,
     )
     await userEvent.click(screen.getByRole('button', { name: 'Ads' }))
-    expect(replace).toHaveBeenCalledWith('/cinematographer?category=ads', { scroll: false })
+    expect(replaceState).toHaveBeenCalledWith(null, '', '/cinematographer?category=ads')
   })
 
   it('honours a filter that arrived in the URL', () => {

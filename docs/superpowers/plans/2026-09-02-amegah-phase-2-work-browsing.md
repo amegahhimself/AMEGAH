@@ -1467,3 +1467,5 @@ git commit -m "Add discipline pages with filtering and cadence-driven grids"
 ## What Phase 2 deliberately leaves out
 
 Project detail pages and Mux video (Phase 3) — cards link to `/work/[slug]`, which 404s until then. Homepage hero variants, featured layout, and the discipline triptych (Phase 4). About, Clients & Partners, Contact (Phase 5). Motion, `mobileCoverImage` art direction, OG images, the performance-budget pass, and the accessibility audit (Phase 6).
+
+True varied-height masonry layout for the `editorial` cadence (spec §6.3) — the current implementation uses a uniform `aspect-[4/5]` for every card rather than genuinely varied portrait/landscape heights. `SanityImage.aspectRatio` is already fetched via `IMAGE_PROJECTION` and ready to drive a real masonry layout once there's seeded project content with genuinely varied aspect ratios to design against (Phase 6).

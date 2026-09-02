@@ -1,6 +1,6 @@
 'use client'
 
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useMemo, useState } from 'react'
 
 import { cadenceLayout } from '@/lib/cadence'
@@ -26,7 +26,6 @@ export function WorkBrowser({
   initialType: string | null
   pageSize?: number
 }) {
-  const router = useRouter()
   const pathname = usePathname()
 
   const [filter, setFilter] = useState<FilterChange>({
@@ -42,7 +41,7 @@ export function WorkBrowser({
   function apply(next: FilterChange) {
     setFilter(next)
     setVisible(pageSize)
-    router.replace(`${pathname}${buildFilterQuery(next)}`, { scroll: false })
+    window.history.replaceState(null, '', `${pathname}${buildFilterQuery(next)}`)
   }
 
   return (

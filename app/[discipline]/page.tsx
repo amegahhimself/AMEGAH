@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { Suspense } from 'react'
+import { Suspense, type ReactNode } from 'react'
 
 import { WorkBrowser } from '@/components/work-browser'
 import { buildCategoryTree } from '@/lib/categories'
@@ -31,7 +31,11 @@ const first = (value: string | string[] | undefined): string | null =>
 export default function DisciplinePage({ params, searchParams }: PageProps<'/[discipline]'>) {
   return (
     <Suspense fallback={<DisciplineFallback />}>
-      <DisciplineView params={params} searchParams={searchParams} />
+      <DisciplineHeader params={params}>
+        <Suspense fallback={<WorkBrowserFallback />}>
+          <DisciplineWork params={params} searchParams={searchParams} />
+        </Suspense>
+      </DisciplineHeader>
     </Suspense>
   )
 }
@@ -39,15 +43,19 @@ export default function DisciplinePage({ params, searchParams }: PageProps<'/[di
 function DisciplineFallback() {
   return (
     <section className="px-6 py-24">
-      <div className="h-12 w-64 animate-pulse bg-white/5" />
+      <div className="h-12 w-64 animate-pulse bg-hairline" />
     </section>
   )
 }
 
-async function DisciplineView({
+function WorkBrowserFallback() {
+  return <div className="mt-12 h-96 animate-pulse bg-hairline" />
+}
+
+async function DisciplineHeader({
   params,
-  searchParams,
-}: Pick<PageProps<'/[discipline]'>, 'params' | 'searchParams'>) {
+  children,
+}: Pick<PageProps<'/[discipline]'>, 'params'> & { children: ReactNode }) {
   const { discipline: slug } = await params
   const discipline = await getDisciplineBySlug(slug)
 
@@ -55,13 +63,7 @@ async function DisciplineView({
     notFound()
   }
 
-  const [flatCategories, projects, query] = await Promise.all([
-    getCategoriesForDiscipline(slug),
-    getProjectsForDiscipline(slug),
-    searchParams,
-  ])
-
-  const categories = buildCategoryTree(flatCategories)
+  const projects = await getProjectsForDiscipline(slug)
 
   return (
     <section className="px-6 py-20 md:py-28">
@@ -80,13 +82,36 @@ async function DisciplineView({
         </p>
       </header>
 
-      <WorkBrowser
-        projects={projects}
-        categories={categories}
-        cadence={discipline.cadence}
-        initialCategory={first(query.category)}
-        initialType={first(query.type)}
-      />
+      {children}
     </section>
+  )
+}
+
+async function DisciplineWork({
+  params,
+  searchParams,
+}: Pick<PageProps<'/[discipline]'>, 'params' | 'searchParams'>) {
+  const { discipline: slug } = await params
+  const [discipline, flatCategories, projects, query] = await Promise.all([
+    getDisciplineBySlug(slug),
+    getCategoriesForDiscipline(slug),
+    getProjectsForDiscipline(slug),
+    searchParams,
+  ])
+
+  if (!discipline) {
+    notFound()
+  }
+
+  const categories = buildCategoryTree(flatCategories)
+
+  return (
+    <WorkBrowser
+      projects={projects}
+      categories={categories}
+      cadence={discipline.cadence}
+      initialCategory={first(query.category)}
+      initialType={first(query.type)}
+    />
   )
 }
