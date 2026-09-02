@@ -17,7 +17,13 @@ export function Practices({ disciplines }: { disciplines: Discipline[] }) {
 
           return (
             <Link key={discipline._id} href={`/${discipline.slug}`} className="group block">
-              <div className="relative aspect-[4/5] w-full overflow-hidden bg-hairline">
+              <div
+                className={
+                  cover?.asset
+                    ? 'relative aspect-[4/5] w-full overflow-hidden bg-hairline'
+                    : 'relative aspect-[4/5] w-full overflow-hidden border border-hairline'
+                }
+              >
                 {cover?.asset && (
                   <Image
                     src={urlFor(cover).width(1200).auto('format').url()}

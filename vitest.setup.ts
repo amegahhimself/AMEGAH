@@ -13,3 +13,19 @@ if (typeof global.CSS === 'undefined') {
     supports: () => false,
   }
 }
+
+// jsdom doesn't implement matchMedia. Default to "no preference" so
+// prefers-reduced-motion checks (e.g. components/hero-reel.tsx) behave like
+// a typical browser unless a test explicitly overrides it.
+if (typeof window !== 'undefined' && typeof window.matchMedia === 'undefined') {
+  window.matchMedia = ((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  })) as unknown as typeof window.matchMedia
+}

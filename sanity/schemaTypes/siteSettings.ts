@@ -30,11 +30,19 @@ export const siteSettings = defineType({
       description:
         'How the homepage opens. Reel: a silent looping showreel. Still: full-bleed photographs. Type: the name at full size, no imagery.',
       options: {
-        list: ['reel', 'still', 'type'],
+        list: [
+          { title: 'Showreel', value: 'reel' },
+          { title: 'Still', value: 'still' },
+          { title: 'Type only', value: 'type' },
+        ],
         layout: 'radio',
       },
       initialValue: 'type',
-      validation: (Rule) => Rule.required(),
+      // No Rule.required() here: initialValue only applies to newly-created
+      // documents, and the Site Settings singleton already exists with this
+      // field undefined. Requiring it would block the client's next publish
+      // until they picked a hero. The code already defaults safely
+      // (heroVariant ?? 'type' in components/home-hero.tsx).
     }),
     defineField({
       name: 'heroVideo',

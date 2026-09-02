@@ -24,10 +24,15 @@ export async function generateMetadata() {
 
   return {
     title,
-    description: settings.seoDescription,
+    // Next 16 merges metadata with `metadata[key] ?? null`, so an explicit
+    // `description: undefined` becomes `null` and overwrites (rather than
+    // inherits) the root layout's description
+    // (node_modules/next/dist/lib/metadata/resolve-metadata.js). Omitting
+    // the key entirely when there's no value lets inheritance work.
+    ...(settings.seoDescription && { description: settings.seoDescription }),
     openGraph: {
       title,
-      description: settings.seoDescription,
+      ...(settings.seoDescription && { description: settings.seoDescription }),
       images: ogImage ? [{ url: ogImage, width: 1200, height: 630 }] : undefined,
     },
   }

@@ -25,4 +25,12 @@ describe('Practices', () => {
     const { container } = render(<Practices disciplines={[]} />)
     expect(container).toBeEmptyDOMElement()
   })
+
+  it('does not render a filled placeholder box when a discipline has no cover image yet', () => {
+    render(<Practices disciplines={disciplines} />)
+    const link = screen.getByRole('link', { name: /Director/ })
+    const box = link.querySelector('div')
+    expect(box).not.toHaveClass('bg-hairline')
+    expect(box).toHaveClass('border-hairline')
+  })
 })
