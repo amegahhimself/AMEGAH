@@ -1,4 +1,5 @@
 import { createClient } from '@sanity/client'
+import { LexoRank } from 'lexorank'
 import {
   categoryId,
   disciplineId,
@@ -27,17 +28,32 @@ const client = createClient({
 async function seed() {
   const transaction = client.transaction()
 
-  taxonomy.forEach((discipline, disciplineIndex) => {
+  let disciplineRank = LexoRank.min()
+
+  // The Studio's "Categories" orderable list (sanity.config.ts /
+  // structure) shows every category document — top-level and children,
+  // across all disciplines — in one single flat, unscoped list. So all
+  // category ranks must come from one running counter shared across the
+  // whole taxonomy: per-discipline or per-parent resets would produce
+  // duplicate ranks within that one real list and reproduce the same
+  // "Try to rank between issues with same rank" crash this fix is for.
+  let categoryRank = LexoRank.min()
+
+  taxonomy.forEach((discipline) => {
+    disciplineRank = disciplineRank.genNext()
+
     transaction.createOrReplace({
       _id: disciplineId(discipline.slug),
       _type: 'discipline',
       title: discipline.title,
       slug: { _type: 'slug', current: discipline.slug },
       cadence: discipline.cadence,
-      orderRank: String(disciplineIndex).padStart(4, '0'),
+      orderRank: disciplineRank.toString(),
     })
 
-    const addCategory = (category: SeedCategory, index: number, parentSlug?: string) => {
+    const addCategory = (category: SeedCategory, parentSlug?: string) => {
+      categoryRank = categoryRank.genNext()
+
       transaction.createOrReplace({
         _id: categoryId(discipline.slug, category.slug),
         _type: 'category',
@@ -52,15 +68,13 @@ async function seed() {
               },
             }
           : {}),
-        orderRank: String(index).padStart(4, '0'),
+        orderRank: categoryRank.toString(),
       })
 
-      category.children?.forEach((child, childIndex) =>
-        addCategory(child, childIndex, category.slug),
-      )
+      category.children?.forEach((child) => addCategory(child, category.slug))
     }
 
-    discipline.categories.forEach((category, index) => addCategory(category, index))
+    discipline.categories.forEach((category) => addCategory(category))
   })
 
   await transaction.commit()

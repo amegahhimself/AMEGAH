@@ -26,8 +26,8 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const [disciplines, settings] = await Promise.all([
-    getDisciplines(),
-    getSiteSettings(),
+    getDisciplines().catch(() => []),
+    getSiteSettings().catch(() => null),
   ]);
 
   return (
