@@ -6,9 +6,12 @@ import { client } from './client'
 import {
   ALL_PROJECT_SLUGS_QUERY,
   CATEGORIES_BY_DISCIPLINE_QUERY,
+  CLIENTS_QUERY,
   DISCIPLINE_BY_SLUG_QUERY,
   DISCIPLINE_PROJECT_REFS_QUERY,
   DISCIPLINES_QUERY,
+  FEATURED_PROJECTS_QUERY,
+  PARTNERS_QUERY,
   PROJECT_DETAIL_QUERY,
   projectListQuery,
   SITE_SETTINGS_QUERY,
@@ -40,17 +43,33 @@ export type Discipline = {
   title: string
   slug: string
   description?: string
-  coverImage?: unknown
+  coverImage?: SanityImage
   cadence: Cadence
+}
+
+export type HeroVariant = 'reel' | 'still' | 'type'
+
+export type LogoRef = {
+  _id: string
+  name: string
+  logo?: SanityImage
+  url?: string
 }
 
 export type SiteSettings = {
   name: string
+  role?: string
   headshot?: unknown
   bio?: unknown
   phone?: string
   email?: string
   instagramUrl?: string
+  heroVariant?: HeroVariant
+  heroVideo?: MuxVideo | null
+  heroImages?: SanityImage[]
+  seoTitle?: string
+  seoDescription?: string
+  ogImage?: SanityImage
 }
 
 export async function getDisciplines(): Promise<Discipline[]> {
@@ -62,7 +81,8 @@ export async function getDisciplines(): Promise<Discipline[]> {
 
 export async function getSiteSettings(): Promise<SiteSettings | null> {
   'use cache'
-  cacheTag(TAGS.siteSettings)
+  // Dereferences the Mux hero asset, so a change to it must invalidate this too.
+  cacheTag(TAGS.siteSettings, TAGS.muxVideoAsset)
   cacheLife('max')
   return client.fetch<SiteSettings | null>(SITE_SETTINGS_QUERY)
 }
@@ -167,4 +187,26 @@ export async function getAllProjectSlugs(): Promise<string[]> {
   cacheTag(TAGS.project)
   cacheLife('max')
   return client.fetch<string[]>(ALL_PROJECT_SLUGS_QUERY)
+}
+
+export async function getFeaturedProjects(): Promise<ProjectCardData[]> {
+  'use cache'
+  // The card projection dereferences discipline and category.
+  cacheTag(TAGS.project, TAGS.discipline, TAGS.category)
+  cacheLife('max')
+  return client.fetch<ProjectCardData[]>(FEATURED_PROJECTS_QUERY)
+}
+
+export async function getClients(): Promise<LogoRef[]> {
+  'use cache'
+  cacheTag(TAGS.client)
+  cacheLife('max')
+  return client.fetch<LogoRef[]>(CLIENTS_QUERY)
+}
+
+export async function getPartners(): Promise<LogoRef[]> {
+  'use cache'
+  cacheTag(TAGS.partner)
+  cacheLife('max')
+  return client.fetch<LogoRef[]>(PARTNERS_QUERY)
 }

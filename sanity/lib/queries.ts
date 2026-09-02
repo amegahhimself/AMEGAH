@@ -40,17 +40,28 @@ export const DISCIPLINES_QUERY = `*[_type == "discipline"] | order(orderRank) {
   title,
   "slug": slug.current,
   description,
-  coverImage,
+  "coverImage": coverImage{
+    ${IMAGE_FIELDS}
+  },
   cadence
 }`
 
 export const SITE_SETTINGS_QUERY = `*[_type == "siteSettings"][0] {
   name,
+  role,
   headshot,
   bio,
   phone,
   email,
-  instagramUrl
+  instagramUrl,
+  heroVariant,
+  "heroVideo": heroVideo.asset->{playbackId, assetId},
+  "heroImages": heroImages[]{
+    ${IMAGE_FIELDS}
+  },
+  seoTitle,
+  seoDescription,
+  ogImage
 }`
 
 export const DISCIPLINE_BY_SLUG_QUERY = `*[_type == "discipline" && slug.current == $slug][0] {
@@ -97,3 +108,19 @@ export const DISCIPLINE_PROJECT_REFS_QUERY = `*[_type == "project" && !archived 
 }`
 
 export const ALL_PROJECT_SLUGS_QUERY = `*[_type == "project" && !archived].slug.current`
+
+export const FEATURED_PROJECTS_QUERY = `*[_type == "project" && !archived && featured == true] | order(orderRank) ${PROJECT_CARD_PROJECTION}`
+
+export const CLIENTS_QUERY = `*[_type == "client"] | order(orderRank) {
+  _id,
+  name,
+  logo,
+  url
+}`
+
+export const PARTNERS_QUERY = `*[_type == "partner"] | order(orderRank) {
+  _id,
+  name,
+  logo,
+  url
+}`
