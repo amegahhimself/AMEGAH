@@ -116,17 +116,17 @@ import {muxInput} from 'sanity-plugin-mux-input'
 Run: `npx vitest run sanity/schemaTypes/project.test.ts`
 Expected: PASS.
 
-- [ ] **Step 7: Configure the Mux credentials in Studio (one time)**
+- [ ] **Step 7: Hand the Mux credential setup to the human — do NOT do it yourself**
 
-The plugin does not read credentials from environment variables. The first time the field is opened it shows a setup screen, and the token is then stored in the dataset as a `mux.apiKey` document with id `secrets.mux`, so every editor shares it.
+The plugin does not read credentials from environment variables. The first time the Video field is opened, Studio shows a setup screen asking for the Mux **Access Token ID** and **Secret Key**; the values are then stored in the dataset as a `mux.apiKey` document with id `secrets.mux`, shared by all editors.
 
-Run `npm run dev`, open `http://localhost:3000/studio`, create a new Project document, and open the Video field. When prompted, paste the **Access Token ID** and **Secret Key** — they are `MUX_TOKEN_ID` and `MUX_TOKEN_SECRET` in `.env.local`.
+**This step is not yours to perform.** Typing an API token or secret into a form field is off-limits for an agent, whether directly or through browser automation — the human does it themselves. Do not open the setup screen and fill it in, do not read `MUX_TOKEN_SECRET`, and do not print either credential anywhere.
 
-**Never print either value into your report, a commit, or a test fixture.** Read them with a command that shows only the key you need, e.g. `grep '^MUX_TOKEN_ID=' .env.local`, and paste directly into the browser.
+Instead, stop here and report that the task's code is complete and this one-time setup is outstanding, so the controller can hand it to the human. The human's instructions are:
 
-Confirm the setup screen accepts them and the field switches to an upload dropzone. Leave the draft Project unsaved/deleted for now — Task 7 creates the real test project. Stop the dev server.
+> Run `npm run dev`, open `http://localhost:3000/studio`, create a Project, and open the **Video** field. When the setup screen appears, paste the Access Token ID and Secret Key — they are `MUX_TOKEN_ID` and `MUX_TOKEN_SECRET` in `.env.local`. Confirm the field then shows an upload dropzone. If the token is rejected, check in the Mux dashboard that it has read+write on Video and read on Data.
 
-If the token is rejected, check in the Mux dashboard that it has read+write on Video and read on Data; the Vercel-provisioned token should already have this.
+Task 7's live verification depends on this being done, but Tasks 2–6 do not, so execution can continue in the meantime.
 
 - [ ] **Step 8: Commit**
 
