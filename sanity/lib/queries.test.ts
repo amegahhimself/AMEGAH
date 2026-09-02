@@ -152,6 +152,14 @@ describe('FEATURED_PROJECTS_QUERY', () => {
   })
 })
 
+describe('SITE_SETTINGS_QUERY headshot', () => {
+  it('projects the headshot’s image fields so the About page can blur and crop it', () => {
+    expect(SITE_SETTINGS_QUERY).toContain('"headshot": headshot{')
+    expect(SITE_SETTINGS_QUERY).toContain('lqip')
+    expect(SITE_SETTINGS_QUERY).toContain('hotspot')
+  })
+})
+
 describe('CLIENTS_QUERY and PARTNERS_QUERY', () => {
   it('each list their own document type in the editor’s order', () => {
     expect(CLIENTS_QUERY).toContain('_type == "client"')

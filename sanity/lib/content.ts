@@ -59,8 +59,8 @@ export type LogoRef = {
 export type SiteSettings = {
   name: string
   role?: string
-  headshot?: unknown
-  bio?: unknown
+  headshot?: SanityImage
+  bio?: PortableTextValue
   phone?: string
   email?: string
   instagramUrl?: string
