@@ -2,11 +2,15 @@ import { describe, expect, it } from 'vitest'
 import {
   ALL_PROJECT_SLUGS_QUERY,
   CATEGORIES_BY_DISCIPLINE_QUERY,
+  CLIENTS_QUERY,
   DISCIPLINE_BY_SLUG_QUERY,
   DISCIPLINE_PROJECT_REFS_QUERY,
+  FEATURED_PROJECTS_QUERY,
+  PARTNERS_QUERY,
   PROJECT_CARD_PROJECTION,
   PROJECT_DETAIL_QUERY,
   projectListQuery,
+  SITE_SETTINGS_QUERY,
 } from './queries'
 
 describe('projectListQuery', () => {
@@ -118,5 +122,48 @@ describe('ALL_PROJECT_SLUGS_QUERY', () => {
   it('lists every non-archived project slug for prerendering', () => {
     expect(ALL_PROJECT_SLUGS_QUERY).toContain('_type == "project"')
     expect(ALL_PROJECT_SLUGS_QUERY).toContain('!archived')
+  })
+})
+
+describe('SITE_SETTINGS_QUERY', () => {
+  it('returns the hero treatment and its assets', () => {
+    expect(SITE_SETTINGS_QUERY).toContain('heroVariant')
+    expect(SITE_SETTINGS_QUERY).toContain('heroVideo')
+    expect(SITE_SETTINGS_QUERY).toContain('heroImages')
+  })
+
+  it('follows the hero video reference to its playback id', () => {
+    expect(SITE_SETTINGS_QUERY).toContain('heroVideo.asset->')
+    expect(SITE_SETTINGS_QUERY).toContain('playbackId')
+  })
+
+  it('returns the role line and share metadata', () => {
+    expect(SITE_SETTINGS_QUERY).toContain('role')
+    expect(SITE_SETTINGS_QUERY).toContain('seoTitle')
+    expect(SITE_SETTINGS_QUERY).toContain('ogImage')
+  })
+})
+
+describe('FEATURED_PROJECTS_QUERY', () => {
+  it('returns only featured, unarchived projects in the editor’s order', () => {
+    expect(FEATURED_PROJECTS_QUERY).toContain('featured == true')
+    expect(FEATURED_PROJECTS_QUERY).toContain('!archived')
+    expect(FEATURED_PROJECTS_QUERY).toContain('order(orderRank)')
+  })
+})
+
+describe('CLIENTS_QUERY and PARTNERS_QUERY', () => {
+  it('each list their own document type in the editor’s order', () => {
+    expect(CLIENTS_QUERY).toContain('_type == "client"')
+    expect(CLIENTS_QUERY).toContain('order(orderRank)')
+    expect(PARTNERS_QUERY).toContain('_type == "partner"')
+    expect(PARTNERS_QUERY).toContain('order(orderRank)')
+  })
+
+  it('return the logo and the outbound link', () => {
+    expect(CLIENTS_QUERY).toContain('logo')
+    expect(CLIENTS_QUERY).toContain('url')
+    expect(PARTNERS_QUERY).toContain('logo')
+    expect(PARTNERS_QUERY).toContain('url')
   })
 })

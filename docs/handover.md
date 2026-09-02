@@ -99,6 +99,27 @@ currently calls it. Set one up:
    important thing is that `_type` must resolve on delete, not the exact
    expression above.)
 
+## A local build can serve stale CMS content
+
+CMS reads are cached with `cacheLife('max')` and invalidated on demand by the
+Sanity webhook (see above). Next.js persists that cache in `.next/cache`
+**between builds**, so locally — where the webhook isn't wired up — a build can
+keep serving whatever it cached earlier, indefinitely.
+
+This is not theoretical: during Phase 4 a build made before the Site Settings
+document existed cached the `null`, and every later build reused it, producing
+a homepage with no hero and no name. The content was published and correct the
+whole time.
+
+If a local build shows content you know is out of date, or shows nothing where
+content exists:
+
+```bash
+rm -rf .next && npm run build
+```
+
+Production is unaffected — the webhook invalidates the relevant tags on publish.
+
 ## Running the seed script
 
 `npm run seed` (`scripts/seed.ts`) is idempotent — it uses deterministic
