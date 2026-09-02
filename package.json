@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
+    "@mux/mux-player-react": "^3.13.2",
+    "@portabletext/react": "^8.0.1",
     "@sanity/image-url": "^2.1.1",
     "@sanity/orderable-document-list": "^2.0.23",
     "@sanity/vision": "^5.31.2",
@@ -26,6 +28,7 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "sanity": "^5.31.2",
+    "sanity-plugin-mux-input": "^5.0.12",
     "shadcn": "^4.19.1",
     "styled-components": "^6.5.3",
     "tailwind-merge": "^3.6.0",

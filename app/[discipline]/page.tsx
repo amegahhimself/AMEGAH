@@ -6,14 +6,15 @@ import { buildCategoryTree } from '@/lib/categories'
 import {
   getCategoriesForDiscipline,
   getDisciplineBySlug,
-  getDisciplines,
   getProjectsForDiscipline,
 } from '@/sanity/lib/content'
 
-export async function generateStaticParams() {
-  const disciplines = await getDisciplines()
-  return disciplines.map((discipline) => ({ discipline: discipline.slug }))
-}
+// No generateStaticParams: disciplines are client-creatable and
+// client-deletable, so this route's params must not depend on content
+// existing at build time — an empty dataset would hard-error the build under
+// Cache Components. Params are runtime data instead; the grid below already
+// streams at request time (it reads searchParams), so the prerendered
+// portion was only ever the heading, description and project count.
 
 export async function generateMetadata({ params }: PageProps<'/[discipline]'>) {
   const { discipline: slug } = await params

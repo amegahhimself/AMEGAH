@@ -12,6 +12,8 @@ touching Vercel env vars or the Sanity webhook config.
 | `SANITY_API_READ_TOKEN` | Server-side Sanity fetches (`sanity/lib/client.ts`) | Development, Preview, **Production** |
 | `SANITY_API_WRITE_TOKEN` | `scripts/seed.ts` only — not read at runtime | Local only (via `.env.local`); does not need to be set in Vercel |
 | `SANITY_REVALIDATE_SECRET` | `/api/revalidate` webhook handler | Development, Preview, **Production** — must match the secret configured on the Sanity webhook |
+| `MUX_TOKEN_ID` | Mux API access token id (provisioned by the Vercel Mux integration) | Development, Preview, **Production** |
+| `MUX_TOKEN_SECRET` | Mux API secret key | Development, Preview, **Production** |
 
 **`SANITY_API_READ_TOKEN` is load-bearing in production.** It's what lets
 `getDisciplines()` / `getSiteSettings()` (used in the root layout for nav and
@@ -28,6 +30,39 @@ The codebase also references `SANITY_API_DATASET`, `SANITY_API_PROJECT_ID`,
 `.env.local`) — these are Sanity CLI/Studio conventions layered on top of the
 two `NEXT_PUBLIC_*` values above and aren't separately required by the
 Next.js app at runtime.
+
+## Mux video setup (partly done — one step remains)
+
+Video is uploaded by the client inside Sanity Studio, using
+`sanity-plugin-mux-input`, and played back with `@mux/mux-player-react`. Mux
+is already provisioned: the Vercel Marketplace resource `mux-charcoal-crystal`
+is connected to the `amegah` project, and `MUX_TOKEN_ID` / `MUX_TOKEN_SECRET`
+are already in the environment.
+
+**Outstanding: the one-time credential entry in Studio.** The plugin does not
+read credentials from environment variables. The first time the Video field on
+a Project is opened, Studio shows a setup screen asking for the Mux Access
+Token ID and Secret Key — paste the values of `MUX_TOKEN_ID` and
+`MUX_TOKEN_SECRET`. They are then stored in the dataset and shared by all
+editors, so this is done once, by a person, and never again. If the token is
+rejected, check in the Mux dashboard that it has read+write on Video and read
+on Data.
+
+Until this is done, the Video field shows "Configure API" instead of an upload
+dropzone, and no video can be uploaded or played.
+
+**Why the dataset must stay private.** The plugin stores those credentials as
+plaintext fields on an ordinary dataset document (`_id: secrets.mux`). The
+Sanity project id is public — it ships in the browser bundle as
+`NEXT_PUBLIC_SANITY_PROJECT_ID` — so if the dataset's visibility were ever
+switched to public, anyone could read the Mux credentials and create or delete
+assets on the client's Mux account. The dataset is currently **private**
+(verified: an unauthenticated API query returns no documents, while an
+authenticated one returns them). Do not make it public.
+
+**Billing.** Mux's free tier (100k streaming minutes/month) covers a portfolio
+comfortably. The client inherits this account at handover, so the encoding tier
+configured in `sanity.config.ts`'s `muxInput()` is their cost to carry.
 
 ## Sanity webhook setup (not yet done — required before launch)
 

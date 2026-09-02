@@ -39,3 +39,42 @@ describe('categoryFilter', () => {
     })
   })
 })
+
+describe('description block restrictions', () => {
+  type BlockOf = {
+    type: string
+    styles?: { value: string }[]
+    lists?: unknown[]
+    marks?: { annotations?: { name: string }[] }
+  }
+
+  const blockOf = () => {
+    const description = fields().find((f) => f.name === 'description') as unknown as {
+      of: BlockOf[]
+    }
+    return description.of.find((entry) => entry.type === 'block')
+  }
+
+  it('only offers the normal paragraph style, not headings or quotes', () => {
+    expect(blockOf()?.styles?.map((s) => s.value)).toEqual(['normal'])
+  })
+
+  it('offers no bullet or numbered lists', () => {
+    expect(blockOf()?.lists).toEqual([])
+  })
+
+  it('keeps the link annotation so editors can still link text', () => {
+    const names = blockOf()?.marks?.annotations?.map((a) => a.name)
+    expect(names).toContain('link')
+  })
+})
+
+describe('project video field', () => {
+  it('stores video as a Mux asset so the client uploads it in Studio', () => {
+    expect(field('muxVideo')?.type).toBe('mux.video')
+  })
+
+  it('keeps previewLoop separate from the full video', () => {
+    expect(field('previewLoop')?.type).toBe('file')
+  })
+})
