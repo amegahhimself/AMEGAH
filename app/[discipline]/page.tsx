@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: PageProps<'/[discipline]'>) {
     openGraph: {
       title,
       ...(discipline.description && { description: discipline.description }),
-      type: 'article',
+      type: 'website',
       // Same trap applies to `images`: an explicit `undefined` overwrites
       // rather than inherits, so omit the key entirely when there's no
       // cover image instead of passing `undefined`.

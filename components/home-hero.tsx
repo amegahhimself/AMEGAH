@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic'
 import Image from 'next/image'
 
 import { hotspotPosition } from '@/lib/card-meta'
+import sanityImageLoader from '@/lib/sanity-image-loader'
 import { posterUrl } from '@/lib/video-poster'
 import type { SiteSettings } from '@/sanity/lib/content'
 import { urlFor } from '@/sanity/lib/image'
@@ -45,7 +46,28 @@ export function HomeHero({ settings }: { settings: SiteSettings | null }) {
   const muxPoster = playbackId
     ? `https://image.mux.com/${playbackId}/thumbnail.jpg`
     : undefined
-  const poster = posterUrl(still) ?? muxPoster
+  const rawPoster = posterUrl(still) ?? muxPoster
+  // HeroReel forwards this string straight into MuxPlayer, which renders
+  // its own <img> in shadow DOM from the literal URL — it never goes
+  // through next/image's loader. Left as the bare source, that produced a
+  // second, separate fetch from the `<Image>` rendered just above (which
+  // the loader resizes per breakpoint): confirmed live, two distinct 200s
+  // for the same frame.
+  //
+  // The fix isn't to drop the `poster` prop from HeroReel: verified in a
+  // real browser (throttled network, screenshot mid-load) that MuxPlayer's
+  // shadow-DOM media-controller paints an opaque solid-black background
+  // behind its video element, so with no poster there is a real black
+  // flash — the `<Image>` beneath does NOT show through, because MuxPlayer
+  // stacks visually on top of it. So instead, resolve the poster through
+  // the loader once, here, to the same clamped width Finding 2 caps the
+  // `<Image>`'s largest srcset candidate at (1920) and hand that identical
+  // string to both places. They can't share literally every request (the
+  // `<Image>` still serves smaller srcset entries on narrower viewports),
+  // but whenever the browser picks the 1920w candidate — the common case
+  // for a full-bleed, high-DPR hero — both elements request the exact same
+  // URL and share one HTTP cache entry instead of two.
+  const poster = rawPoster ? sanityImageLoader({ src: rawPoster, width: 1920 }) : undefined
 
   const showReel = variant === 'reel' && playbackId
   const showStill = variant === 'still' && still?.asset

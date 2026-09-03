@@ -59,6 +59,15 @@ describe('sanityImageLoader', () => {
       expect(url.searchParams.get('width')).toBe('800')
     })
 
+    it('clamps an absurdly large requested width to 1920', () => {
+      // The source video is 1280x720; a high-DPR full-width viewport can ask
+      // next/image for width=3840, which Mux would honour by upscaling a
+      // 720p source to a genuine 3840x2160 image. This poster is only ever a
+      // full-bleed background behind a video player, so cap it at 1920.
+      const url = new URL(sanityImageLoader({ src: MUX_BASE, width: 3840 }))
+      expect(url.searchParams.get('width')).toBe('1920')
+    })
+
     it('never emits fit_mode, even if the input URL had one', () => {
       // fit_mode=smartcrop 400s whenever the requested width exceeds the
       // source video's own resolution — this is the exact bug being fixed.

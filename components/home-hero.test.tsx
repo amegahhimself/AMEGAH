@@ -15,6 +15,7 @@ vi.mock('@mux/mux-player-react', () => ({
     <div
       data-testid="hero-player"
       data-playback-id={props.playbackId as string}
+      data-poster={props.poster as string | undefined}
       data-autoplay={String(props.autoPlay ?? false)}
       data-muted={String(props.muted ?? false)}
       data-loop={String(props.loop ?? false)}
@@ -65,6 +66,41 @@ describe('HomeHero', () => {
     render(<HomeHero settings={{ ...base, heroVariant: 'reel' }} />)
     expect(screen.queryByTestId('hero-player')).not.toBeInTheDocument()
     expect(screen.getByText('Amegah')).toBeInTheDocument()
+  })
+
+  it('never constructs a reel poster URL containing fit_mode', async () => {
+    // The exact regression that shipped once already: Mux's thumbnail API
+    // 400s whenever fit_mode=smartcrop is combined with a requested width
+    // larger than the source video's own resolution. Pin this directly so
+    // it cannot recur silently.
+    render(
+      <HomeHero
+        settings={{
+          ...base,
+          heroVariant: 'reel',
+          heroVideo: { playbackId: 'pb1' },
+          heroImages: [{ asset: { _ref: 'image-a-1600x900-jpg' } }],
+        }}
+      />,
+    )
+    const poster = await screen.findByAltText('')
+    expect(poster).toHaveAttribute('src')
+    expect(poster.getAttribute('src')).not.toContain('fit_mode')
+
+    const player = await screen.findByTestId('hero-player')
+    expect(player).toHaveAttribute('data-poster')
+    expect(player.getAttribute('data-poster')).not.toContain('fit_mode')
+  })
+
+  it('renders a poster image in the reel branch when there is no hero still, falling back to the Mux thumbnail', async () => {
+    render(
+      <HomeHero
+        settings={{ ...base, heroVariant: 'reel', heroVideo: { playbackId: 'pb1' } }}
+      />,
+    )
+    const poster = await screen.findByAltText('')
+    const src = poster.getAttribute('src') ?? ''
+    expect(decodeURIComponent(src)).toContain('image.mux.com/pb1/thumbnail.jpg')
   })
 
   it('renders the typographic hero with a fallback name when there are no settings', () => {
