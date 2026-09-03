@@ -71,6 +71,9 @@ export const DISCIPLINE_BY_SLUG_QUERY = `*[_type == "discipline" && slug.current
   title,
   "slug": slug.current,
   description,
+  "coverImage": coverImage{
+    ${IMAGE_FIELDS}
+  },
   cadence
 }`
 

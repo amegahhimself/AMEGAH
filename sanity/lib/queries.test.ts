@@ -51,6 +51,10 @@ describe('DISCIPLINE_BY_SLUG_QUERY', () => {
   it('returns the cadence that drives the grid layout', () => {
     expect(DISCIPLINE_BY_SLUG_QUERY).toContain('cadence')
   })
+
+  it('projects the cover image, which the page needs for its share image', () => {
+    expect(DISCIPLINE_BY_SLUG_QUERY).toContain('"coverImage": coverImage{')
+  })
 })
 
 describe('CATEGORIES_BY_DISCIPLINE_QUERY', () => {

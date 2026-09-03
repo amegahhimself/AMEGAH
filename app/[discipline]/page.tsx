@@ -8,6 +8,7 @@ import {
   getDisciplineBySlug,
   getProjectsForDiscipline,
 } from '@/sanity/lib/content'
+import { urlFor } from '@/sanity/lib/image'
 
 // No generateStaticParams: disciplines are client-creatable and
 // client-deletable, so this route's params must not depend on content
@@ -20,9 +21,29 @@ export async function generateMetadata({ params }: PageProps<'/[discipline]'>) {
   const { discipline: slug } = await params
   const discipline = await getDisciplineBySlug(slug)
   if (!discipline) return {}
+
+  const title = `${discipline.title} — Amegah`
+  const ogImage = discipline.coverImage?.asset
+    ? urlFor(discipline.coverImage).width(1200).height(630).auto('format').url()
+    : undefined
+
   return {
-    title: `${discipline.title} — Amegah`,
-    description: discipline.description,
+    title,
+    // Next 16 merges metadata with `metadata[key] ?? null`, so an explicit
+    // `description: undefined` becomes `null` and overwrites (rather than
+    // inherits) the root layout's description
+    // (node_modules/next/dist/lib/metadata/resolve-metadata.js). Omitting
+    // the key entirely when there's no value lets inheritance work.
+    ...(discipline.description && { description: discipline.description }),
+    openGraph: {
+      title,
+      ...(discipline.description && { description: discipline.description }),
+      type: 'article',
+      // Same trap applies to `images`: an explicit `undefined` overwrites
+      // rather than inherits, so omit the key entirely when there's no
+      // cover image instead of passing `undefined`.
+      ...(ogImage && { images: [{ url: ogImage, width: 1200, height: 630 }] }),
+    },
   }
 }
 
