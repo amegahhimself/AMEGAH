@@ -10,12 +10,18 @@ export function SiteFooter({ settings }: { settings: SiteSettings | null }) {
 
         <div className="flex flex-col gap-2">
           {settings?.email && (
-            <a href={`mailto:${settings.email}`} className="text-ink-soft hover:text-ink">
+            <a
+              href={`mailto:${settings.email}`}
+              className="inline-flex min-h-11 items-center text-ink-soft hover:text-ink"
+            >
               {settings.email}
             </a>
           )}
           {settings?.phone && (
-            <a href={`tel:${settings.phone}`} className="text-ink-soft hover:text-ink">
+            <a
+              href={`tel:${settings.phone}`}
+              className="inline-flex min-h-11 items-center text-ink-soft hover:text-ink"
+            >
               {settings.phone}
             </a>
           )}
@@ -24,7 +30,7 @@ export function SiteFooter({ settings }: { settings: SiteSettings | null }) {
               href={settings.instagramUrl}
               target="_blank"
               rel="noreferrer"
-              className="index-meta hover:text-ink"
+              className="index-meta inline-flex min-h-11 items-center hover:text-ink"
             >
               Instagram
             </a>

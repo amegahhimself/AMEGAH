@@ -68,7 +68,7 @@ export function ProjectCard({
           year: project.year,
         })}
       </p>
-      <h3 className="font-display mt-1 text-xl text-ink">{project.title}</h3>
+      <h2 className="font-display mt-1 text-xl text-ink">{project.title}</h2>
     </Link>
   )
 }
