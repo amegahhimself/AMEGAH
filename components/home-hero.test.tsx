@@ -73,13 +73,18 @@ describe('HomeHero', () => {
     // 400s whenever fit_mode=smartcrop is combined with a requested width
     // larger than the source video's own resolution. Pin this directly so
     // it cannot recur silently.
+    //
+    // No heroImages here, deliberately: with a hero still present,
+    // posterUrl(still) wins over the Mux fallback and this test exercises
+    // the Sanity CDN path instead of the one it exists to guard. Confirmed
+    // by mutation: with heroImages set, reintroducing the literal
+    // fit_mode=smartcrop bug left every assertion in this test passing.
     render(
       <HomeHero
         settings={{
           ...base,
           heroVariant: 'reel',
           heroVideo: { playbackId: 'pb1' },
-          heroImages: [{ asset: { _ref: 'image-a-1600x900-jpg' } }],
         }}
       />,
     )
