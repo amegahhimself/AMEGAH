@@ -67,6 +67,16 @@ export function HomeHero({ settings }: { settings: SiteSettings | null }) {
         </div>
       )}
 
+      {/*
+        The name is white and sits on top of whatever the client uploads. A
+        bright reel or still leaves it unreadable — a bright showreel made the
+        name completely invisible during review. This scrim darkens only the
+        lower band the name and role occupy, so the imagery above stays clean.
+      */}
+      {(showReel || showStill) && (
+        <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-ground/90 via-ground/30 to-transparent" />
+      )}
+
       <div className="relative">
         <h1
           className="font-display text-ink"

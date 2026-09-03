@@ -132,3 +132,40 @@ the 3 seeded disciplines and 16 seeded categories from the client brief —
 including any drag-reordering a client has done in the Studio. Only re-run it
 intentionally (e.g. to fix a data problem), never as a routine step in a
 deploy pipeline.
+
+## Placeholder content
+
+`npm run seed:placeholders` (`scripts/seed-placeholders.ts`) fills an empty
+dataset with invented projects, stock photographs from Picsum, and Mux's
+public demo videos, so the site can be seen and reviewed before the client has
+uploaded anything.
+
+**All of it must be removed before launch** — the brief is explicit that the
+client owns all assets, and none of this is theirs:
+
+```
+npm run seed:placeholders -- --clear
+```
+
+`--clear` deletes every document it created (they all carry a `placeholder.`
+ID prefix) and unsets the fields it set on the Site Settings singleton and on
+the three discipline documents, leaving anything the client has since added
+untouched.
+
+Two things worth knowing:
+
+- **`npm run seed` will wipe the discipline cover images.** The taxonomy seed
+  uses `createOrReplace` on the discipline documents, so re-running it drops
+  the `coverImage` and `description` the placeholder script sets on them —
+  the homepage triptych goes back to three empty boxes. Re-run
+  `seed:placeholders` afterwards if that happens.
+- **The demo videos are chosen, not arbitrary.** Mux's best-known demo ID is a
+  recorded conference talk full of white slides, which looks broken behind the
+  white wordmark. If a demo ID ever stops streaming, check a replacement's
+  thumbnail at `https://image.mux.com/<id>/thumbnail.jpg` and pick something
+  dark — the script fails loudly rather than seeding a broken player.
+
+Note that `discipline.coverImage` is a real schema field the client can set in
+the Studio, but nothing populates it by default. Without it — placeholder or
+real — the homepage triptych renders three empty bordered boxes. Worth walking
+the client through when handing over.
