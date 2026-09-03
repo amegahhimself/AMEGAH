@@ -17,6 +17,8 @@ import { LexoRank } from 'lexorank'
 import { categoryId, disciplineId } from './seed-data.ts'
 import {
   demoVideos,
+  headshotPexelsId,
+  ogImagePexelsId,
   placeholderBio,
   placeholderClients,
   placeholderDisciplines,
@@ -95,24 +97,34 @@ async function clear() {
   console.log('Placeholders removed. Site Settings kept, its placeholder fields unset.')
 }
 
-/**
- * Downloads a stock photo and uploads it to Sanity.
- *
- * Sanity deduplicates uploads by content hash and Picsum is deterministic per
- * seed, so re-running reuses the same assets instead of piling up copies.
- */
-async function uploadImage(seed: string, width: number, height: number) {
-  const url = `https://picsum.photos/seed/${seed}/${width}/${height}`
-  const response = await fetch(url)
+/** Downloads bytes from a URL and uploads them to Sanity as an image asset. */
+async function uploadImageFromUrl(url: string, filename: string) {
+  const response = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } })
   if (!response.ok) {
     throw new Error(`Could not fetch placeholder image ${url}: ${response.status}`)
   }
   const asset = await client.assets.upload(
     'image',
     Buffer.from(await response.arrayBuffer()),
-    { filename: `${seed}-${width}x${height}.jpg` },
+    { filename },
   )
   return { _type: 'image', asset: { _type: 'reference', _ref: asset._id } }
+}
+
+/**
+ * Downloads a specific, curated Pexels photo and uploads it to Sanity, cropped
+ * to the requested size. Sanity deduplicates uploads by content hash, so
+ * re-running this script at the same size reuses the same asset.
+ */
+async function uploadPexelsImage(pexelsId: number, width: number, height: number) {
+  const url = `https://images.pexels.com/photos/${pexelsId}/pexels-photo-${pexelsId}.jpeg?auto=compress&cs=tinysrgb&w=${width}&h=${height}&fit=crop`
+  return uploadImageFromUrl(url, `pexels-${pexelsId}-${width}x${height}.jpg`)
+}
+
+/** Uses a frame from the project's own video as its cover, via Mux's thumbnail API. */
+async function uploadMuxThumbnail(playbackId: string, time: number, width: number, height: number) {
+  const url = `https://image.mux.com/${playbackId}/thumbnail.jpg?width=${width}&height=${height}&fit_mode=smartcrop&time=${time}`
+  return uploadImageFromUrl(url, `mux-${playbackId}-${time}.jpg`)
 }
 
 /** Confirms a demo video still streams before it is seeded as content. */
@@ -153,11 +165,11 @@ async function seed() {
     throw new Error('No disciplines found. Run `npm run seed` first to create the taxonomy.')
   }
 
-  console.log('Checking the demo videos still stream…')
-  for (const [name, playbackId] of Object.entries(demoVideos)) {
-    if (!(await verifyPlaybackId(playbackId))) {
+  console.log('Checking the placeholder videos still stream…')
+  for (const [name, video] of Object.entries(demoVideos)) {
+    if (!(await verifyPlaybackId(video.playbackId))) {
       throw new Error(
-        `The demo ${name} video (${playbackId}) is not streaming, so seeding it would leave a broken player. Find a current Mux demo ID, checking its thumbnail at https://image.mux.com/<id>/thumbnail.jpg — it needs to be dark to sit behind white type.`,
+        `The ${name} video (${video.playbackId}) is not streaming, so seeding it would leave a broken player. Re-run scripts/mux-ingest.ts against a fresh source URL and update demoVideos.`,
       )
     }
     console.log(`  ${name}: streaming`)
@@ -167,23 +179,21 @@ async function seed() {
 
   // Mux asset documents. `muxVideo`/`heroVideo` are references, and the app
   // dereferences them for `playbackId`, so the placeholder needs a real
-  // document to point at.
-  const reelId = id('mux', 'reel')
-  const filmId = id('mux', 'film')
-  transaction.createOrReplace({
-    _id: reelId,
-    _type: 'mux.videoAsset',
-    status: 'ready',
-    playbackId: demoVideos.reel,
-    assetId: 'placeholder-reel',
-  })
-  transaction.createOrReplace({
-    _id: filmId,
-    _type: 'mux.videoAsset',
-    status: 'ready',
-    playbackId: demoVideos.film,
-    assetId: 'placeholder-film',
-  })
+  // document to point at. These are genuine assets in this project's own Mux
+  // account (created by scripts/mux-ingest.ts from real Pexels footage), not
+  // borrowed demo IDs — so the assetId is authentic.
+  const muxDocIds: Record<keyof typeof demoVideos, string> = {} as never
+  for (const [name, video] of Object.entries(demoVideos)) {
+    const docId = id('mux', name)
+    muxDocIds[name as keyof typeof demoVideos] = docId
+    transaction.createOrReplace({
+      _id: docId,
+      _type: 'mux.videoAsset',
+      status: 'ready',
+      playbackId: video.playbackId,
+      assetId: video.assetId,
+    })
+  }
   const muxRef = (ref: string) => ({
     _type: 'mux.video',
     asset: { _type: 'reference', _ref: ref },
@@ -193,7 +203,7 @@ async function seed() {
   // createOrReplace here would drop their cadence and orderRank.
   console.log('Giving each discipline a cover for the homepage triptych…')
   for (const discipline of placeholderDisciplines) {
-    const coverImage = await uploadImage(discipline.imageSeed, 1600, 2000)
+    const coverImage = await uploadPexelsImage(discipline.pexelsId, 1600, 2000)
     transaction.patch(disciplineId(discipline.slug), (patch) =>
       patch.set({ coverImage, description: discipline.description }),
     )
@@ -211,16 +221,28 @@ async function seed() {
     transaction.createOrReplace(orgDoc('partner', org, partnerRank.toString()))
   })
 
+  // A small rotating pool of curated photos for gallery filler, so each
+  // project's gallery shows real, varied imagery without needing a unique
+  // Pexels pick for every single slot.
+  const GALLERY_POOL = [
+    3052361, 2117937, 3062541, 3062545, 1704488, 2246476, 3760607, 2387819,
+    1707823, 3244513, 1699161, 2896853,
+  ]
+
   console.log(`Uploading images for ${placeholderProjects.length} projects…`)
   let projectRank = LexoRank.min()
 
-  for (const project of placeholderProjects) {
+  for (const [index, project] of placeholderProjects.entries()) {
     projectRank = projectRank.genNext()
 
-    const coverImage = await uploadImage(`${project.imageSeed}-cover`, 2400, 1350)
+    const coverImage = project.muxThumbnail
+      ? await uploadMuxThumbnail(project.muxThumbnail.playbackId, project.muxThumbnail.time ?? 3, 2400, 1350)
+      : await uploadPexelsImage(project.pexelsId, 2400, 1350)
+
     const gallery = []
     for (let i = 0; i < project.galleryCount; i += 1) {
-      const image = await uploadImage(`${project.imageSeed}-${i}`, 2000, 1333)
+      const pexelsId = GALLERY_POOL[(index + i) % GALLERY_POOL.length]
+      const image = await uploadPexelsImage(pexelsId, 2000, 1333)
       gallery.push({ ...image, _key: `g${i}`, alt: `${project.title}, still ${i + 1}` })
     }
 
@@ -240,7 +262,7 @@ async function seed() {
       description: project.description.map((text, i) => block(text, `d${i}`)),
       featured: Boolean(project.featured),
       archived: false,
-      ...(project.video && { muxVideo: muxRef(filmId) }),
+      ...(project.video && { muxVideo: muxRef(muxDocIds[project.video]) }),
       ...(project.client && {
         client: { _type: 'reference', _ref: id('client', project.client) },
       }),
@@ -257,8 +279,8 @@ async function seed() {
   }
 
   console.log('Uploading the headshot and share image…')
-  const headshot = await uploadImage('amegah-headshot', 1200, 1500)
-  const ogImage = await uploadImage('amegah-og', 1200, 630)
+  const headshot = await uploadPexelsImage(headshotPexelsId, 1200, 1500)
+  const ogImage = await uploadPexelsImage(ogImagePexelsId, 1200, 630)
 
   // The singleton belongs to the client — create it only if missing, then set
   // the placeholder fields, so nothing else on it is disturbed.
@@ -280,7 +302,7 @@ async function seed() {
       bio: placeholderBio.map((text, i) => block(text, `b${i}`)),
       // Shows the reel hero, which has never been seen with real video.
       heroVariant: 'reel',
-      heroVideo: muxRef(reelId),
+      heroVideo: muxRef(muxDocIds.mountainNight),
     }),
   )
 

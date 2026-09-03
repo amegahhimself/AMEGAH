@@ -19,14 +19,16 @@ export type PlaceholderProject = {
   category: string
   year: number
   featured?: boolean
-  /** Seeds the cover image and gallery deterministically. */
-  imageSeed: string
+  /** A specific, curated Pexels photo id used for the cover image. */
+  pexelsId: number
+  /** Salt and Water's cover comes from its own video's frame instead. */
+  muxThumbnail?: { playbackId: string; time?: number }
   galleryCount: number
   description: string[]
   client?: string
   partners?: string[]
-  /** Only one project carries the demo film; the rest are stills. */
-  video?: boolean
+  /** Which real Mux-hosted video (see demoVideos) this project carries, if any. */
+  video?: 'mountainNight' | 'fishermanSunset'
 }
 
 export const placeholderProjects: PlaceholderProject[] = [
@@ -37,9 +39,9 @@ export const placeholderProjects: PlaceholderProject[] = [
     category: 'music-videos',
     year: 2025,
     featured: true,
-    imageSeed: 'amegah-northern',
+    pexelsId: 1699161,
     galleryCount: 4,
-    video: true,
+    video: 'mountainNight',
     client: 'kwame-records',
     partners: ['harmattan-post'],
     description: [
@@ -54,7 +56,7 @@ export const placeholderProjects: PlaceholderProject[] = [
     category: 'ads',
     year: 2024,
     featured: true,
-    imageSeed: 'amegah-kinetic',
+    pexelsId: 2529148,
     galleryCount: 3,
     client: 'atlas-athletic',
     description: [
@@ -67,7 +69,7 @@ export const placeholderProjects: PlaceholderProject[] = [
     discipline: 'director',
     category: 'short-films',
     year: 2024,
-    imageSeed: 'amegah-longwalk',
+    pexelsId: 3244513,
     galleryCount: 4,
     partners: ['harmattan-post', 'north-star-sound'],
     description: [
@@ -82,8 +84,10 @@ export const placeholderProjects: PlaceholderProject[] = [
     category: 'documentaries',
     year: 2025,
     featured: true,
-    imageSeed: 'amegah-salt',
+    muxThumbnail: { playbackId: 'aCHSbTMxc814scDkxFaIGuIjIvC1X14bA29oJH2xOJE' },
+    pexelsId: 1834407,
     galleryCount: 5,
+    video: 'fishermanSunset',
     client: 'coastline-films',
     description: [
       'Six weeks with a fishing crew on the coast, shot almost entirely at first light.',
@@ -96,7 +100,7 @@ export const placeholderProjects: PlaceholderProject[] = [
     discipline: 'cinematographer',
     category: 'music-videos',
     year: 2024,
-    imageSeed: 'amegah-midnight',
+    pexelsId: 1707823,
     galleryCount: 3,
     client: 'kwame-records',
     description: [
@@ -109,7 +113,7 @@ export const placeholderProjects: PlaceholderProject[] = [
     discipline: 'cinematographer',
     category: 'short-films',
     year: 2023,
-    imageSeed: 'amegah-afterdark',
+    pexelsId: 2387877,
     galleryCount: 4,
     description: [
       'A night in three parts, lit almost entirely by the city itself.',
@@ -121,7 +125,7 @@ export const placeholderProjects: PlaceholderProject[] = [
     discipline: 'cinematographer',
     category: 'white-wedding',
     year: 2025,
-    imageSeed: 'amegah-wedding',
+    pexelsId: 3059720,
     galleryCount: 5,
     description: [
       'A two-day wedding filmed with two operators and no second takes.',
@@ -134,7 +138,7 @@ export const placeholderProjects: PlaceholderProject[] = [
     category: 'portraits',
     year: 2025,
     featured: true,
-    imageSeed: 'amegah-portraits',
+    pexelsId: 1024311,
     galleryCount: 6,
     description: [
       'An ongoing series shot against a single grey seamless, one light, no retouching beyond dust.',
@@ -146,7 +150,7 @@ export const placeholderProjects: PlaceholderProject[] = [
     discipline: 'photographer',
     category: 'lifestyle',
     year: 2024,
-    imageSeed: 'amegah-market',
+    pexelsId: 2896853,
     galleryCount: 5,
     description: [
       'Colour work made across four markets over a year, printed large.',
@@ -158,7 +162,7 @@ export const placeholderProjects: PlaceholderProject[] = [
     discipline: 'photographer',
     category: 'editorial',
     year: 2023,
-    imageSeed: 'amegah-fabric',
+    pexelsId: 3785424,
     galleryCount: 4,
     client: 'atlas-athletic',
     partners: ['north-star-sound'],
@@ -177,17 +181,17 @@ export const placeholderProjects: PlaceholderProject[] = [
 export const placeholderDisciplines = [
   {
     slug: 'director',
-    imageSeed: 'amegah-discipline-director',
+    pexelsId: 1707820,
     description: 'Music videos, commercials and short films.',
   },
   {
     slug: 'cinematographer',
-    imageSeed: 'amegah-discipline-dop',
+    pexelsId: 2117937,
     description: 'Camera and lighting for narrative, documentary and events.',
   },
   {
     slug: 'photographer',
-    imageSeed: 'amegah-discipline-photo',
+    pexelsId: 2896853,
     description: 'Portraiture, lifestyle and editorial commissions.',
   },
 ]
@@ -232,20 +236,30 @@ export const placeholderSettings = {
 }
 
 /**
- * Mux's public demo videos. They stream without any Mux account, which is what
- * makes the showreel and the project film viewable before the client's Mux
- * credentials are entered.
+ * Real stock footage from Pexels, ingested into Mux via its API
+ * (scripts/mux-ingest.ts) so it streams with adaptive bitrate exactly like the
+ * client's own footage will. Not a stand-in demo clip — actual video content,
+ * licensed for this kind of use under the Pexels license.
  *
- * Chosen by eye from their thumbnails, not picked off a list: Mux's best-known
- * demo ID (`qxb01i6T…`) is a recorded conference talk full of white slides,
- * which looks broken behind a white wordmark. Both of these are dark and
- * cinematic, which is what the hero is designed around.
- *
- * The script verifies each still streams before seeding it.
+ * `mountainNight`: a starry night camp beneath a peak — dark and atmospheric,
+ * used for the homepage showreel and the "Northern Lights" project.
+ * `fishermanSunset`: a small boat crossing calm water at sunset — used for the
+ * "Salt and Water" documentary, whose own description ("shot almost entirely
+ * at first light") this happens to match.
  */
 export const demoVideos = {
-  /** Blue ink blooming in water on black — abstract, dark, reads as a reel. */
-  reel: 'a4nOgmxGWg6gULfcBbAa00gXyfcwPnAFldF8RdsNyk8M',
-  /** A letterboxed, low-key narrative clip — reads as a film. */
-  film: 'DS00Spx1CV902MCtPj5WknGlR102V5HFkDe',
+  mountainNight: {
+    playbackId: 'osqQxLf7lwrE02n6iGwCmGE31CE9QU4JTVNg1GofO01XY',
+    assetId: 'W8jvSbOfeoTcGMuS5J3Mt5GKVZLraSs9WyIJAmVVHiQ',
+  },
+  fishermanSunset: {
+    playbackId: 'aCHSbTMxc814scDkxFaIGuIjIvC1X14bA29oJH2xOJE',
+    assetId: '01edF82tvYRPH3cKTCRiVj7zln802UMSLZctl7X44c32M',
+  },
 }
+
+/** A moody portrait, used for the About page headshot. */
+export const headshotPexelsId = 2379005
+
+/** Reused for the social share image — broad appeal, on-brand and dark. */
+export const ogImagePexelsId = 3052361
