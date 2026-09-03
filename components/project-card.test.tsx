@@ -46,6 +46,24 @@ describe('ProjectCard', () => {
     )
     expect(screen.getByText('03 — 2025')).toBeInTheDocument()
   })
+
+  it('loads eagerly at high priority when priority is set (first above-the-fold card)', () => {
+    const { container } = render(
+      <ProjectCard project={project} index={0} cadence="cinematic" priority />,
+    )
+    const img = container.querySelector('img') as HTMLImageElement
+    expect(img).toHaveAttribute('loading', 'eager')
+    expect(img).toHaveAttribute('fetchpriority', 'high')
+  })
+
+  it('loads lazily by default when priority is omitted', () => {
+    const { container } = render(
+      <ProjectCard project={project} index={0} cadence="cinematic" />,
+    )
+    const img = container.querySelector('img') as HTMLImageElement
+    expect(img).toHaveAttribute('loading', 'lazy')
+    expect(img).not.toHaveAttribute('fetchpriority')
+  })
 })
 
 // Swapping the file but keeping the 16:9 box would object-cover the client's

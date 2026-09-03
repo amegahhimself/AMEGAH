@@ -33,6 +33,94 @@ budget on every run, including the most favorable local run recorded.**
 This is stated plainly as a finding, not smoothed over — a local run is
 already the best case, so a real 4G client will be slower, not faster.
 
+### Task 6 update — the two LCP root causes above were fixed in source; re-measured
+
+Both fixes below were implemented exactly as scoped (see git history for
+`components/home-hero.tsx`, `components/project-card.tsx`,
+`components/work-browser.tsx`), verified against a **fresh production
+build** (`rm -rf .next && npm run build && npm run start`), and confirmed by
+hand in the server-rendered HTML (`curl`), not just by reading source:
+
+- **`/` (homepage hero poster)**: `HomeHero` now renders a `priority`
+  `next/image` poster (`posterUrl(still) ?? muxPoster`, where `muxPoster` is
+  built from `https://image.mux.com/${playbackId}/thumbnail.jpg?...` when no
+  Hero Still is configured) stacked behind `<HeroReel>`. Confirmed in the
+  production server HTML: a real `<img>` for the poster is present
+  before any JS runs, and Next emits a matching `<link rel="preload"
+  as="image" ...>` in `<head>`. This is a genuine fix to the diagnosed
+  bug (poster now discoverable in the initial HTML) — see "still fails,
+  new root cause" below for why the Lighthouse *metric* didn't move.
+
+- **`/cinematographer` (first card eager load)**: `priority` is now threaded
+  `WorkBrowser` → `ProjectCard` → `CoverImage`, passed only as
+  `priority={index === 0}` from `work-browser.tsx`. Confirmed in the
+  production HTML: the first project card's `<img>` has `loading="eager"
+  fetchpriority="high"`, every later card still has `loading="lazy"` (no
+  `fetchpriority`). Lighthouse's own `lcp-discovery-insight` audit for this
+  page went from failing (`eagerlyLoaded: false`, `priorityHinted: false`)
+  to a clean pass — `priorityHinted: true`, `requestDiscoverable: true`,
+  `eagerlyLoaded: true` — confirming the fix does exactly what it was meant
+  to at the DOM/discoverability level. `project-card.test.tsx` now pins both
+  directions (`priority` → `loading="eager"`/`fetchpriority="high"`, default
+  → `loading="lazy"`/no `fetchpriority`).
+
+**Re-run, same invocation as Task 5** (`npx lighthouse <url>
+--form-factor=mobile --throttling-method=simulate`, production build, 2–3
+runs per page):
+
+| Page | Before (Task 5) | After (Task 6) | Budget met? |
+|---|---|---|---|
+| `/` | 5.7s – 8.4s | **8.0s – 8.5s** | No — still fails, see below |
+| `/cinematographer` | 3.4s – 3.5s | **3.4s** (unchanged) | No — see below |
+
+**These numbers are reported honestly: neither page's Lighthouse-measured
+LCP moved into budget, despite both fixes being correctly implemented and
+independently verified at the DOM level.** Two different explanations,
+investigated separately:
+
+**`/cinematographer` — the fix works; the `simulate` metric doesn't reflect
+it.** The discoverability audit (`lcp-discovery-insight`) is now a clean
+pass, and `lcp-breakdown-insight`'s own subparts for the LCP image sum to
+~450ms (TTFB 2.6ms + resource load 431ms + render delay 21ms) — nowhere
+near 3.4s, the same mismatch Task 5 already flagged as a `simulate`-mode
+quirk (Lighthouse's `--throttling-method=simulate` estimates the LCP
+*metric* from a modeled network-dependency graph of the whole page, not
+purely the observed timing of the LCP resource, so a per-resource fix can
+leave the reported metric unmoved). As a cross-check, the same page under
+`--throttling-method=devtools` (a real trace, not a simulated model) reports
+**LCP 2.2s — inside the 2.5s budget**, performance score 98. This is strong
+evidence the fix is real; it's the `simulate` metric specifically that isn't
+crediting it. Kept the `simulate` numbers as the primary, Task-5-comparable
+record per instructions, but the `devtools` result is logged here since it
+materially changes the honest picture of whether this fix "worked."
+
+**`/` — a genuinely new, deeper root cause, found by inspecting the trace.**
+`lcp-breakdown-insight` on every re-run (`simulate` and `devtools` alike)
+names the LCP element as `slot > video` — the native `<video>` element
+inside `<mux-player>`'s shadow DOM — not our new poster `<img>`. Inspecting
+that node's HTML in the trace shows why: `<video crossorigin
+playsinline muted loop preload="metadata" src="blob:...">` — **no `poster`
+attribute**. `@mux/mux-player-react`'s `poster` prop does not forward to the
+underlying native `<video>` element's `poster` attribute; it's applied at
+the custom-element level for its own instant-paint UI, not exposed as a
+browser-recognized LCP-eligible poster. Per the LCP spec, a `<video>`
+element with no `poster` attribute becomes an LCP candidate once its own
+first frame decodes and paints — which only happens after the ~1MB Mux
+Player chunk loads, the manifest is fetched, and the first frame decodes,
+i.e. exactly the slow path this task set out to avoid. Because that later
+video paint is a *same-or-larger*-sized element than our `<img>`, Chrome's
+LCP algorithm credits it as the new (later, worse) candidate, overriding
+the fast poster paint entirely. **Our poster fix is real and independently
+verified (present in server HTML, preloaded) — it is simply not what
+Lighthouse ends up measuring, because a second, unrelated element (the bare
+`<video>` tag) supersedes it as the LCP candidate once the player mounts.**
+Fixing this fully would mean getting `@mux/mux-player-react` to set a real
+`poster` attribute on its inner `<video>` element (a mux-player-specific
+question, possibly a wrapper-level workaround or an upstream issue) — out of
+scope for this task's two narrowly-defined fixes. **Logged as a new,
+outstanding item**, not silently left in the old "no poster in HTML" framing
+that Task 5 used, since that framing is now factually superseded.
+
 ### Why `/` misses LCP so badly (5.7s–8.4s vs. a 2.5s budget)
 
 The LCP element on every home page run is the Mux player's poster `<img>`
@@ -229,23 +317,55 @@ viewport (not just class names) via Playwright.
 4. Footer contact links were 342×17–24px, under the 44px target
    (`components/site-footer.tsx`).
 
-**Outstanding** (4 items, deliberately not attempted — each is either
-architectural or needs investigation beyond this task's scope):
+**Fixed in Task 6** (2 items — the exact two LCP root causes this file
+flagged as outstanding above):
 
-1. Homepage LCP (5.7s–8.4s) — `HeroReel`'s `next/dynamic({ ssr: false })`
-   keeps the Mux poster out of the initial HTML entirely. Needs an SSR'd
-   eager poster `<img>` with the interactive player swapped in client-side,
-   not a small edit.
-2. `/cinematographer` LCP (3.4s–3.5s) — first project card's cover image is
-   `loading="lazy"` despite being above the fold. Needs an eager/priority
-   flag plumbed through `ProjectCard` for the first row across both cadences
-   and both call sites (`featured-work.tsx`, `work-browser.tsx`).
+5. Homepage hero poster now renders as a real, `priority` `next/image` in
+   server HTML (`components/home-hero.tsx`), with a Mux-thumbnail fallback
+   when no Hero Still is configured. Verified present in production
+   `curl`'d HTML plus a matching `<link rel="preload" as="image">`.
+6. `/cinematographer`'s (and every discipline page's) first project card
+   now loads eagerly at high priority (`components/project-card.tsx`,
+   `components/work-browser.tsx`, `priority={index === 0}`); every later
+   card stays lazy. `lcp-discovery-insight` for this page now passes
+   cleanly (was failing). `featured-work.tsx` deliberately left untouched
+   per the brief — its grid is below the homepage hero, not the LCP
+   candidate there.
+
+**Still outstanding** (4 items — 2 carried over unfixed, 1 downgraded to
+a *new* root cause found during Task 6, 1 unchanged design item):
+
+1. **Homepage LCP is still failing (8.0s–8.5s under `simulate`, 15.6s under
+   `devtools` — worse than Task 5's original 5.7s–8.4s reading)**, but the
+   root cause has changed: the poster fix above is real and verified, but
+   Lighthouse's recorded LCP element is now the bare `<video>` inside
+   `<mux-player>`'s shadow DOM, which has no `poster` attribute forwarded to
+   it by `@mux/mux-player-react` and so becomes its own (slow) LCP candidate
+   once the player mounts and decodes a frame, superseding the fast poster
+   paint. See "Task 6 update" above for the full trace-based diagnosis.
+   Fixing this needs either an upstream/wrapper fix to get `@mux/mux-player-react`
+   to set a real `poster` attribute on its native `<video>`, or a different
+   mechanism to keep that `<video>` out of LCP contention until playback
+   genuinely starts — out of scope for this task.
+2. `/cinematographer` LCP is still reported as 3.4s under
+   `--throttling-method=simulate` (Task 5's method, unchanged from before),
+   even though the fix is verified correct at the DOM level and
+   `--throttling-method=devtools` on the same build reports **2.2s — inside
+   budget**. This looks like a `simulate`-mode metric-estimation quirk
+   (matches the sub-second breakdown-vs-metric mismatch Task 5 already
+   flagged), not a failure of the fix itself, but is recorded honestly as an
+   unmet number under the methodology this file uses for before/after
+   comparison.
 3. `/cinematographer` CLS is noisy across runs (0 to 0.256) — not reliably
-   reproduced or root-caused in the time available.
+   reproduced or root-caused in the time available; unchanged by Task 6,
+   which did not touch layout/CLS-affecting code.
 4. Header `Amegah` wordmark link is 67×28px, under the 44px touch target —
    a design call, not fixed here.
 
 Both LCP misses are logged honestly rather than restated as passes; the
 budget (§7.4: LCP < 2.5s, CLS < 0.1) is genuinely not met on either measured
-page, on real production builds, even under the most favorable local
-network/CPU conditions.
+page under the `simulate` methodology used throughout this file, on real
+production builds, even under the most favorable local network/CPU
+conditions. `/cinematographer` is inside budget under a trace-based
+(`devtools`) measurement of the same build; `/` is not, under either
+method.

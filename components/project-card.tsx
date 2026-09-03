@@ -15,6 +15,7 @@ export function ProjectCard({
   index,
   cadence,
   sizes,
+  priority,
 }: {
   project: ProjectCardData
   index: number
@@ -22,6 +23,10 @@ export function ProjectCard({
   /** Overrides the cadence's default `sizes` when the card sits in a grid
    *  whose column widths differ from that discipline's own grid. */
   sizes?: string
+  /** Above the fold — load this card's cover image eagerly and at high
+   *  priority. Only the first card on a page with no hero above the grid
+   *  (discipline pages via `work-browser.tsx`) should ever set this. */
+  priority?: boolean
 }) {
   const layout = cadenceLayout(cadence)
   const image = project.coverImage
@@ -57,6 +62,7 @@ export function ProjectCard({
           mobileImage={project.mobileCoverImage}
           alt={project.title}
           sizes={sizes ?? layout.sizes}
+          priority={priority}
           className="transition-transform duration-700 ease-out group-hover:scale-[1.03]"
         />
       </div>
