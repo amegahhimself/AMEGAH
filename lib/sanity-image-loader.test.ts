@@ -50,4 +50,26 @@ describe('sanityImageLoader', () => {
     // new URL() throws on relative paths; a local /public asset must not break.
     expect(sanityImageLoader({ src: '/next.svg', width: 800 })).toBe('/next.svg')
   })
+
+  describe('Mux thumbnails', () => {
+    const MUX_BASE = 'https://image.mux.com/abc123/thumbnail.jpg'
+
+    it('asks Mux for the width next/image actually needs', () => {
+      const url = new URL(sanityImageLoader({ src: MUX_BASE, width: 800 }))
+      expect(url.searchParams.get('width')).toBe('800')
+    })
+
+    it('never emits fit_mode, even if the input URL had one', () => {
+      // fit_mode=smartcrop 400s whenever the requested width exceeds the
+      // source video's own resolution — this is the exact bug being fixed.
+      const url = new URL(
+        sanityImageLoader({
+          src: `${MUX_BASE}?width=2400&fit_mode=smartcrop`,
+          width: 800,
+        }),
+      )
+      expect(url.searchParams.has('fit_mode')).toBe(false)
+      expect(url.searchParams.get('width')).toBe('800')
+    })
+  })
 })

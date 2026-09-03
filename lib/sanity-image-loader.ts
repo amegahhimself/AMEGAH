@@ -33,6 +33,17 @@ export default function sanityImageLoader({
     return src
   }
 
+  if (url.hostname === 'image.mux.com') {
+    // Mux's thumbnail API takes `width` (not Sanity's `w`), and rejects
+    // fit_mode=smartcrop whenever the requested width exceeds the source
+    // video's own resolution (verified: a 1280px-wide source 400s on
+    // width=2400&fit_mode=smartcrop but accepts width=2400 alone, which
+    // performs a plain proportional resize instead of a crop).
+    url.searchParams.set('width', String(width))
+    url.searchParams.delete('fit_mode')
+    return url.toString()
+  }
+
   if (url.hostname !== 'cdn.sanity.io') {
     return src
   }

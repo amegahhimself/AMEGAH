@@ -369,3 +369,72 @@ production builds, even under the most favorable local network/CPU
 conditions. `/cinematographer` is inside budget under a trace-based
 (`devtools`) measurement of the same build; `/` is not, under either
 method.
+
+### Task 7 update — the Mux poster's actual 400 fixed; re-measured
+
+Task 6 shipped a `<Image>` for the homepage hero poster, but its Mux URL
+(`?width=2400&fit_mode=smartcrop`) 400'd in production — the source video is
+only 1280px wide, and Mux's `fit_mode=smartcrop` rejects a crop wider than
+the source resolution. The `<img>` existed in server HTML (Task 6's actual
+claim) but never loaded (`naturalWidth: 0`), so it could never have been a
+real LCP candidate regardless of what the trace above showed.
+
+**Fix**: `lib/sanity-image-loader.ts` gained a second branch, alongside the
+existing `cdn.sanity.io` one, for `image.mux.com` — it sets Mux's `width`
+param to the per-breakpoint width `next/image` requests and always strips
+any incoming `fit_mode`, so no request can 400 the way the shipped one did.
+`components/home-hero.tsx`'s `muxPoster` no longer hardcodes `?width=2400&fit_mode=smartcrop`
+in the base URL — the loader now injects `width` fresh per breakpoint,
+mirroring how `urlFor(...).width(n)` + the loader's `.set('w', ...)` already
+work for Sanity images. `alt={name}` on the poster `<Image>` was also
+changed to `alt=""` (decorative — the visible name is the separate `<h1>` a
+few lines below; a screen reader announcing it duplicated the heading).
+
+**Verified for real, not just claimed:**
+
+- Fresh production build (`rm -rf .next && npm run build && npm run start`).
+  The rendered homepage's poster `<img src>` is now
+  `https://image.mux.com/osqQxLf7lwrE02n6iGwCmGE31CE9QU4JTVNg1GofO01XY/thumbnail.jpg?width=3840`
+  (no `fit_mode`). Curled directly: `curl -sI
+  "https://image.mux.com/osqQxLf7lwrE02n6iGwCmGE31CE9QU4JTVNg1GofO01XY/thumbnail.jpg?width=3840"`
+  → **`HTTP/2 200`**, `content-type: image/jpeg`, `content-length: 763148`.
+- Loaded `/` in a real Chrome tab (chrome-devtools MCP) and read the live DOM:
+  the poster `<img>`'s `naturalWidth` is **1720** (`naturalHeight: 967`,
+  `complete: true`) — a genuinely decoded, painted image, not just a present
+  tag.
+- `lib/sanity-image-loader.test.ts` gained two new tests for the Mux branch
+  (asks Mux for the per-breakpoint `width`; never emits `fit_mode` even when
+  the input URL already had one) — both pass, and all 8 pre-existing
+  `cdn.sanity.io` tests in the same file still pass unmodified.
+
+**Re-run, same invocation as Tasks 5/6** (`npx lighthouse http://localhost:3000/
+--form-factor=mobile --throttling-method=simulate`, fresh production build,
+3 runs):
+
+| Run | Performance score | LCP | CLS | TBT |
+|---|---|---|---|---|
+| 1 | 73 | 8.24s | 0 | 119ms |
+| 2 | 76 | 6.97s | 0.041 | 59ms |
+| 3 | 93 | 3.26s | 0 | 60ms |
+
+**LCP range: 3.3s – 8.2s.** This is honestly reported as still failing the
+§7.4 budget (LCP < 2.5s) on 2 of 3 runs, and only borderline-adjacent on the
+best run (3.3s, still ~0.8s over). It is **not** a regression from Task 6's
+8.0s–8.5s range — the noisy low end (3.3s) is new and consistent with the
+poster now genuinely being LCP-eligible on some runs (`lcp-discovery-insight`
+on run 1 names the LCP node as `main.flex-1 > section.relative > div.absolute
+> img.object-cover` — our poster — with `requestDiscoverable: true`,
+`eagerlyLoaded: true`; the same audit's `resourceLoadDuration` breakdown for
+that run sums to well under 1s, reproducing the same `simulate`-mode
+metric/breakdown mismatch Task 5/6 already documented for this page). Run 2's
+LCP node resolved to an unrelated `img#image`, suggesting the Mux player's
+own late-mounting `<video>` (documented in the Task 6 update above,
+`@mux/mux-player-react` not forwarding `poster` to its inner `<video>`) can
+still supersede the poster as LCP candidate on some runs — that root cause is
+unchanged by this task and remains out of scope here.
+
+**This task's actual bar — the poster is a real, correctly-sized, loading
+image, not a broken 400 — is met**, independently of whether the budget
+number is. The remaining LCP gap is the same pre-existing, already-diagnosed
+`<mux-player>`-shadow-DOM issue from the Task 6 update, not a new problem
+introduced or left unaddressed by this task.

@@ -43,7 +43,7 @@ export function HomeHero({ settings }: { settings: SiteSettings | null }) {
   // thumbnail CDN, built from the `playbackId` already in hand (no extra
   // fetch: pure string construction).
   const muxPoster = playbackId
-    ? `https://image.mux.com/${playbackId}/thumbnail.jpg?width=2400&fit_mode=smartcrop`
+    ? `https://image.mux.com/${playbackId}/thumbnail.jpg`
     : undefined
   const poster = posterUrl(still) ?? muxPoster
 
@@ -67,7 +67,7 @@ export function HomeHero({ settings }: { settings: SiteSettings | null }) {
           {poster && (
             <Image
               src={poster}
-              alt={name}
+              alt=""
               fill
               priority
               sizes="100vw"
