@@ -11,7 +11,19 @@ export function Practices({ disciplines }: { disciplines: Discipline[] }) {
 
   return (
     <section className="border-t border-hairline px-6 py-24 md:py-32">
-      <h2 className="index-meta mb-12">The work</h2>
+      <div className="mb-6 flex items-center gap-3">
+        <span className="h-px w-6 bg-accent" aria-hidden="true" />
+        <span className="index-meta text-accent!">Showreels</span>
+      </div>
+
+      <h2 aria-label="The Work In Motion" className="mb-14 leading-[0.9]">
+        <span className="font-condensed block text-5xl uppercase text-ink md:text-7xl">
+          The Work
+        </span>
+        <span className="text-outline mt-1 block font-display text-5xl italic md:text-7xl">
+          In Motion
+        </span>
+      </h2>
       <div className="grid grid-cols-1 gap-x-6 gap-y-12 md:grid-cols-3">
         {disciplines.map((discipline) => {
           const cover = discipline.coverImage

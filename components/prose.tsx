@@ -3,9 +3,8 @@ import { PortableText, type PortableTextComponents } from '@portabletext/react'
 import type { PortableTextValue } from '@/sanity/lib/content'
 
 // Both fields this renders — project.description and siteSettings.bio —
-// restrict the block to the normal style and the link annotation, so a link
-// is the only mark needing styling: an underline via the existing tokens, no
-// ad-hoc colour.
+// restrict the block to the normal style, the strong/em decorators and the
+// link annotation.
 const components: PortableTextComponents = {
   marks: {
     link: ({ value, children }) => (
@@ -18,6 +17,11 @@ const components: PortableTextComponents = {
         {children}
       </a>
     ),
+    // The browser default <strong> is bold but stays the body's own muted
+    // colour, so it barely reads as emphasis against the surrounding text.
+    // Brightening it to full ink is what actually makes a client's bolded
+    // phrase (a name, a credential) stand out on the page.
+    strong: ({ children }) => <strong className="font-semibold text-ink">{children}</strong>,
   },
 }
 

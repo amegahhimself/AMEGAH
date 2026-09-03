@@ -129,14 +129,24 @@ export function HomeHero({ settings }: { settings: SiteSettings | null }) {
         <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-ground/90 via-ground/30 to-transparent" />
       )}
 
+      {/*
+        The name AND role now live in the header (see site-header.tsx), not
+        repeated here. The reference site's hero meta row shows information
+        the header doesn't (location, credentials, specialisms) — we have no
+        such separate data, only the same role string, so putting it here too
+        was literal duplication three lines under the header on mobile.
+        <h1> stays on the page via the header's own heading semantics
+        elsewhere; this hidden one keeps a single real h1 for the homepage.
+      */}
+      <h1 className="sr-only">{name}</h1>
+
       <div className="relative">
-        <h1
-          className="font-display text-ink"
-          style={{ fontSize: 'clamp(2.5rem, 10vw, 8rem)', lineHeight: 1.02 }}
+        <a
+          href="#work"
+          className="inline-flex min-h-11 items-center bg-accent px-6 text-sm font-medium tracking-wide text-accent-ink transition-opacity hover:opacity-90"
         >
-          {name}
-        </h1>
-        {settings?.role && <p className="index-meta mt-4">{settings.role}</p>}
+          View Work
+        </a>
       </div>
 
       <div className="absolute inset-x-0 bottom-6 flex justify-center md:bottom-10">

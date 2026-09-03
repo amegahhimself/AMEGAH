@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 
+import { AboutSection } from '@/components/about-section'
 import { FeaturedWork } from '@/components/featured-work'
 import { HomeHero } from '@/components/home-hero'
 import { LogoStrip } from '@/components/logo-strip'
@@ -62,8 +63,9 @@ async function HomeView() {
   return (
     <>
       <HomeHero settings={settings} />
-      <FeaturedWork projects={featured} />
       <Practices disciplines={disciplines} />
+      <FeaturedWork projects={featured} />
+      <AboutSection settings={settings} />
       <LogoStrip clients={clients} partners={partners} />
     </>
   )

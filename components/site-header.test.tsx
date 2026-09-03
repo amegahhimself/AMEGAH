@@ -11,7 +11,7 @@ const disciplines = [
 
 describe('SiteHeader', () => {
   it('links to each discipline from the CMS', () => {
-    render(<SiteHeader disciplines={disciplines} />)
+    render(<SiteHeader disciplines={disciplines} settings={null} />)
     expect(screen.getByRole('link', { name: 'Director' })).toHaveAttribute(
       'href',
       '/director',
@@ -23,20 +23,48 @@ describe('SiteHeader', () => {
   })
 
   it('always offers the standing pages', () => {
-    render(<SiteHeader disciplines={disciplines} />)
-    expect(screen.getByRole('link', { name: 'About' })).toHaveAttribute('href', '/about')
-    expect(screen.getByRole('link', { name: 'Clients' })).toHaveAttribute('href', '/clients')
-    expect(screen.getByRole('link', { name: 'Contact' })).toHaveAttribute('href', '/contact')
+    render(<SiteHeader disciplines={disciplines} settings={null} />)
+    expect(screen.getByRole('link', { name: 'About' })).toHaveAttribute('href', '/#about')
+    expect(screen.getByRole('link', { name: 'Clients' })).toHaveAttribute('href', '/#clients')
+  })
+
+  it('has no standalone Contact link — Hire {name} already points at #contact', () => {
+    render(<SiteHeader disciplines={disciplines} settings={null} />)
+    expect(screen.queryByRole('link', { name: 'Contact' })).not.toBeInTheDocument()
   })
 
   it('renders nothing discipline-shaped when the CMS is empty', () => {
-    render(<SiteHeader disciplines={[]} />)
+    render(<SiteHeader disciplines={[]} settings={null} />)
     expect(screen.getByRole('link', { name: 'About' })).toBeInTheDocument()
   })
 
   it('exposes a labelled menu toggle for small screens', () => {
-    render(<SiteHeader disciplines={disciplines} />)
+    render(<SiteHeader disciplines={disciplines} settings={null} />)
     expect(screen.getByRole('button', { name: /menu/i })).toBeInTheDocument()
+  })
+
+  it('falls back to the site name when settings are unavailable', () => {
+    render(<SiteHeader disciplines={disciplines} settings={null} />)
+    expect(screen.getByText('Amegah')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Hire Amegah/i })).toHaveAttribute(
+      'href',
+      '/#contact',
+    )
+  })
+
+  it('shows the client’s own name and role, and offers to hire by first name', () => {
+    render(
+      <SiteHeader
+        disciplines={disciplines}
+        settings={{ name: 'Amegah Boateng', role: 'Director · Cinematographer' }}
+      />,
+    )
+    expect(screen.getByText('Amegah Boateng')).toBeInTheDocument()
+    expect(screen.getByText('Director · Cinematographer')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Hire Amegah/i })).toHaveAttribute(
+      'href',
+      '/#contact',
+    )
   })
 
   // The mobile-menu focus trap (WCAG 2.4.3 / 2.1.2): built in an earlier
@@ -44,18 +72,18 @@ describe('SiteHeader', () => {
   // the exact behaviour the useEffect in site-header.tsx implements.
   describe('mobile menu focus trap', () => {
     it('moves focus to the first link when opened, not the trigger button', async () => {
-      render(<SiteHeader disciplines={disciplines} />)
+      render(<SiteHeader disciplines={disciplines} settings={null} />)
       await userEvent.click(screen.getByRole('button', { name: 'Menu' }))
       const dialog = screen.getByRole('dialog', { name: 'Menu' })
       expect(within(dialog).getByRole('link', { name: 'Director' })).toHaveFocus()
     })
 
     it('cycles from the last focusable element back to the first (the menu button)', async () => {
-      render(<SiteHeader disciplines={disciplines} />)
+      render(<SiteHeader disciplines={disciplines} settings={null} />)
       await userEvent.click(screen.getByRole('button', { name: 'Menu' }))
       const dialog = screen.getByRole('dialog', { name: 'Menu' })
 
-      const lastLink = within(dialog).getByRole('link', { name: 'Contact' })
+      const lastLink = within(dialog).getByRole('link', { name: 'Clients' })
       lastLink.focus()
       expect(lastLink).toHaveFocus()
 
@@ -64,7 +92,7 @@ describe('SiteHeader', () => {
     })
 
     it('shift+tabs from the first focusable element to the last', async () => {
-      render(<SiteHeader disciplines={disciplines} />)
+      render(<SiteHeader disciplines={disciplines} settings={null} />)
       await userEvent.click(screen.getByRole('button', { name: 'Menu' }))
       const dialog = screen.getByRole('dialog', { name: 'Menu' })
 
@@ -73,11 +101,11 @@ describe('SiteHeader', () => {
       expect(menuButton).toHaveFocus()
 
       await userEvent.tab({ shift: true })
-      expect(within(dialog).getByRole('link', { name: 'Contact' })).toHaveFocus()
+      expect(within(dialog).getByRole('link', { name: 'Clients' })).toHaveFocus()
     })
 
     it('closes on Escape and returns focus to the trigger button', async () => {
-      render(<SiteHeader disciplines={disciplines} />)
+      render(<SiteHeader disciplines={disciplines} settings={null} />)
       const trigger = screen.getByRole('button', { name: 'Menu' })
       await userEvent.click(trigger)
       expect(screen.getByRole('dialog', { name: 'Menu' })).toBeInTheDocument()

@@ -114,9 +114,12 @@ async function ProjectView({ params }: Pick<PageProps<'/work/[slug]'>, 'params'>
 
         <ProjectGallery images={project.gallery ?? []} title={project.title} />
 
-        <nav className="mt-32 flex items-center justify-between border-t border-hairline pt-8">
+        <nav className="mt-32 flex flex-wrap items-center justify-between gap-4 border-t border-hairline pt-8">
           {prev ? (
-            <Link href={`/work/${prev.slug}`} className="index-meta min-h-11 hover:text-ink">
+            <Link
+              href={`/work/${prev.slug}`}
+              className="index-meta inline-flex min-h-11 items-center border border-hairline px-5 transition-colors hover:border-ink-soft hover:text-ink"
+            >
               ← {prev.title}
             </Link>
           ) : (
@@ -124,12 +127,15 @@ async function ProjectView({ params }: Pick<PageProps<'/work/[slug]'>, 'params'>
           )}
           <Link
             href={`/${project.discipline.slug}`}
-            className="index-meta min-h-11 hover:text-ink"
+            className="index-meta inline-flex min-h-11 items-center border border-accent px-5 !text-accent transition-colors hover:bg-accent hover:!text-accent-ink"
           >
             All {project.discipline.title}
           </Link>
           {next ? (
-            <Link href={`/work/${next.slug}`} className="index-meta min-h-11 hover:text-ink">
+            <Link
+              href={`/work/${next.slug}`}
+              className="index-meta inline-flex min-h-11 items-center border border-hairline px-5 transition-colors hover:border-ink-soft hover:text-ink"
+            >
               {next.title} →
             </Link>
           ) : (

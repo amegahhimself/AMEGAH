@@ -23,6 +23,15 @@ const withLink = [
   },
 ] as unknown as PortableTextValue
 
+const withStrong = [
+  {
+    _type: 'block',
+    _key: 'c',
+    style: 'normal',
+    children: [{ _type: 'span', _key: 'c1', text: 'Amegah Boateng', marks: ['strong'] }],
+  },
+] as unknown as PortableTextValue
+
 describe('Prose', () => {
   it('renders the prose the client wrote', () => {
     render(<Prose value={paragraph} />)
@@ -40,6 +49,13 @@ describe('Prose', () => {
     render(<Prose value={withLink} />)
     const link = screen.getByRole('link', { name: 'See the film' })
     expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'))
+  })
+
+  it('brightens bolded text to full ink instead of leaving it the muted body colour', () => {
+    render(<Prose value={withStrong} />)
+    const strong = screen.getByText('Amegah Boateng')
+    expect(strong.tagName).toBe('STRONG')
+    expect(strong.className).toContain('text-ink')
   })
 
   it('constrains the reading width so long prose stays legible', () => {
