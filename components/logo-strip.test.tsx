@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import { LogoGroups, LogoStrip } from './logo-strip'
+import { LogoStrip } from './logo-strip'
 import type { LogoRef } from '@/sanity/lib/content'
 
 const withLogo: LogoRef = {
@@ -18,10 +18,23 @@ const logoNoUrl: LogoRef = {
 }
 
 describe('LogoStrip', () => {
+  it('anchors as #clients so the header nav can scroll straight to it', () => {
+    const { container } = render(<LogoStrip clients={[withLogo]} partners={[]} />)
+    expect(container.querySelector('#clients')).toBeInTheDocument()
+  })
+
+  it('titles the section', () => {
+    render(<LogoStrip clients={[withLogo]} partners={[]} />)
+    expect(screen.getByRole('heading', { name: 'Clients & Partners' })).toBeInTheDocument()
+  })
+
   it('shows both groups when both have entries', () => {
+    // Scoped to level-3 headings: the section's own big headline is also
+    // literally the word "Clients" (a level-2 heading), so a bare text match
+    // is ambiguous between the two.
     render(<LogoStrip clients={[withLogo]} partners={[withoutLogo]} />)
-    expect(screen.getByText('Clients')).toBeInTheDocument()
-    expect(screen.getByText('Partners')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 3, name: 'Clients' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 3, name: 'Partners' })).toBeInTheDocument()
   })
 
   it('links a logo out when the client gave a website', () => {
@@ -58,38 +71,9 @@ describe('LogoStrip', () => {
     expect(screen.queryByText('Partners')).not.toBeInTheDocument()
   })
 
-  it('renders nothing when there are neither clients nor partners', () => {
+  it('says the client list is coming soon rather than rendering an empty section — the #clients anchor must still exist for the nav link to land on', () => {
     const { container } = render(<LogoStrip clients={[]} partners={[]} />)
-    expect(container).toBeEmptyDOMElement()
-  })
-
-  it('carries the homepage band’s own rule and page padding', () => {
-    const { container } = render(<LogoStrip clients={[withLogo]} partners={[]} />)
-    const className = container.firstElementChild?.className ?? ''
-    expect(className).toContain('border-t')
-    expect(className).toContain('px-6')
-  })
-})
-
-// The Clients page supplies its own heading and page padding, so it renders
-// the groups without the band chrome. Nesting the full band there doubled the
-// horizontal padding and floated an inset rule across the middle of the page.
-describe('LogoGroups', () => {
-  it('renders the groups', () => {
-    render(<LogoGroups clients={[withLogo]} partners={[]} />)
-    expect(screen.getByText('Clients')).toBeInTheDocument()
-    expect(screen.getByAltText('Studio One')).toBeInTheDocument()
-  })
-
-  it('brings no rule or page padding of its own', () => {
-    const { container } = render(<LogoGroups clients={[withLogo]} partners={[]} />)
-    const className = container.firstElementChild?.className ?? ''
-    expect(className).not.toContain('border-t')
-    expect(className).not.toContain('px-6')
-  })
-
-  it('renders nothing when there are neither clients nor partners', () => {
-    const { container } = render(<LogoGroups clients={[]} partners={[]} />)
-    expect(container).toBeEmptyDOMElement()
+    expect(screen.getByText('Client list coming soon.')).toBeInTheDocument()
+    expect(container.querySelector('#clients')).toBeInTheDocument()
   })
 })

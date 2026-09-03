@@ -17,14 +17,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [slugs, disciplines] = await Promise.all([getAllProjectSlugs(), getDisciplines()])
 
   return [
+    // About, Clients and Contact are sections on this URL now, not separate
+    // pages — see components/about-section.tsx's doc comment — so they get
+    // no entries of their own.
     { url: BASE_URL, changeFrequency: 'monthly', priority: 1 },
-    // The standing pages. They rarely change, but they are indexable and
-    // would otherwise be discoverable only by crawling the nav.
-    ...['about', 'clients', 'contact'].map((path) => ({
-      url: `${BASE_URL}/${path}`,
-      changeFrequency: 'yearly' as const,
-      priority: 0.5,
-    })),
     ...disciplines.map((discipline) => ({
       url: `${BASE_URL}/${discipline.slug}`,
       changeFrequency: 'weekly' as const,

@@ -26,11 +26,14 @@ vi.mock('@mux/mux-player-react', () => ({
 const base: SiteSettings = { name: 'Amegah', role: 'Director · Cinematographer' }
 
 describe('HomeHero', () => {
-  it('always shows the name and role, whichever treatment is chosen', () => {
+  it('always exposes the name as the page heading, whichever treatment is chosen', () => {
+    // The name and role are rendered once, in SiteHeader — see
+    // site-header.test.tsx. HomeHero keeps only a screen-reader-only <h1>
+    // so the homepage still has a real heading, without repeating the same
+    // text a few lines under the header.
     for (const heroVariant of ['reel', 'still', 'type'] as const) {
       const { unmount } = render(<HomeHero settings={{ ...base, heroVariant }} />)
-      expect(screen.getByText('Amegah')).toBeInTheDocument()
-      expect(screen.getByText('Director · Cinematographer')).toBeInTheDocument()
+      expect(screen.getByRole('heading', { level: 1, name: 'Amegah' })).toBeInTheDocument()
       unmount()
     }
   })
@@ -111,5 +114,14 @@ describe('HomeHero', () => {
   it('renders the typographic hero with a fallback name when there are no settings', () => {
     render(<HomeHero settings={null} />)
     expect(screen.getByRole('heading', { level: 1, name: 'Amegah' })).toBeInTheDocument()
+  })
+
+  it('offers the one call to action, to the work section', () => {
+    // "Get in Touch" was dropped: Contact is now reachable directly from the
+    // header nav as a same-page anchor, so a second hero CTA pointing at the
+    // same place was redundant.
+    render(<HomeHero settings={base} />)
+    expect(screen.getByRole('link', { name: 'View Work' })).toHaveAttribute('href', '#work')
+    expect(screen.queryByRole('link', { name: 'Get in Touch' })).not.toBeInTheDocument()
   })
 })

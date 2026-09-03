@@ -18,8 +18,10 @@ function Pill({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`index-meta min-h-11 px-3 transition-colors ${
-        active ? 'text-ink' : 'text-ink-muted hover:text-ink-soft'
+      className={`min-h-11 border-b-2 px-4 text-xs font-medium tracking-[0.14em] uppercase transition-colors ${
+        active
+          ? 'border-accent text-accent'
+          : 'border-transparent text-ink-muted hover:border-hairline hover:text-ink-soft'
       }`}
     >
       {label}
@@ -43,7 +45,7 @@ export function CategoryFilterBar({
 
   return (
     <div className="border-b border-hairline">
-      <div className="-mx-3 flex flex-wrap items-center">
+      <div className="-mx-4 flex flex-wrap items-center">
         <Pill
           label="All"
           active={activeCategory === null}

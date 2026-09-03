@@ -90,14 +90,22 @@ async function DisciplineHeader({
   return (
     <section className="px-6 py-20 md:py-28">
       <header className="mb-12">
-        <h1
-          className="font-display text-ink"
-          style={{ fontSize: 'clamp(2.5rem, 7vw, 5rem)', lineHeight: 1.05 }}
-        >
-          {discipline.title}
+        <div className="mb-6 flex items-center gap-3">
+          <span className="h-px w-6 bg-accent" aria-hidden="true" />
+          <span className="index-meta !text-accent">Portfolio</span>
+        </div>
+
+        <h1 aria-label={`${discipline.title} Work`} className="mb-6 leading-[0.9]">
+          <span className="font-condensed block text-5xl uppercase text-ink md:text-7xl">
+            {discipline.title}
+          </span>
+          <span className="text-outline mt-1 block font-display text-5xl italic md:text-7xl">
+            Work
+          </span>
         </h1>
+
         {discipline.description && (
-          <p className="mt-4 max-w-[var(--measure)] text-ink-soft">{discipline.description}</p>
+          <p className="max-w-[var(--measure)] text-ink-soft">{discipline.description}</p>
         )}
         <p className="index-meta mt-6">
           {projects.length} {projects.length === 1 ? 'project' : 'projects'}

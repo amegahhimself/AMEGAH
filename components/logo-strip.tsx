@@ -40,7 +40,7 @@ function Group({ title, entries }: { title: string; entries: LogoRef[] }) {
 
   return (
     <div>
-      <h2 className="index-meta mb-8">{title}</h2>
+      <h3 className="index-meta mb-8">{title}</h3>
       <div className="flex flex-wrap items-center gap-x-12 gap-y-8">
         {entries.map((entry) => (
           <Logo key={entry._id} entry={entry} />
@@ -51,30 +51,9 @@ function Group({ title, entries }: { title: string; entries: LogoRef[] }) {
 }
 
 /**
- * The two labelled logo groups, with no chrome of their own.
- *
- * Use this inside a page that already provides its own heading and padding —
- * `LogoStrip` below is a full-width homepage band and would double the
- * horizontal padding and float a stray rule if nested.
+ * The homepage's Clients & Partners section. There is no separate /clients
+ * page — see components/about-section.tsx's doc comment for why.
  */
-export function LogoGroups({
-  clients,
-  partners,
-}: {
-  clients: LogoRef[]
-  partners: LogoRef[]
-}) {
-  if (clients.length === 0 && partners.length === 0) return null
-
-  return (
-    <div className="flex flex-col gap-16">
-      <Group title="Clients" entries={clients} />
-      <Group title="Partners" entries={partners} />
-    </div>
-  )
-}
-
-/** The homepage band: the logo groups plus their own rule and page padding. */
 export function LogoStrip({
   clients,
   partners,
@@ -82,11 +61,32 @@ export function LogoStrip({
   clients: LogoRef[]
   partners: LogoRef[]
 }) {
-  if (clients.length === 0 && partners.length === 0) return null
+  const isEmpty = clients.length === 0 && partners.length === 0
 
   return (
-    <section className="border-t border-hairline px-6 py-24">
-      <LogoGroups clients={clients} partners={partners} />
+    <section id="clients" className="border-t border-hairline px-6 py-24 md:py-32">
+      <div className="mb-6 flex items-center gap-3">
+        <span className="h-px w-6 bg-accent" aria-hidden="true" />
+        <span className="index-meta !text-accent">Collaborators</span>
+      </div>
+
+      <h2 aria-label="Clients & Partners" className="mb-14 leading-[0.9]">
+        <span className="font-condensed block text-5xl uppercase text-ink md:text-7xl">
+          Clients
+        </span>
+        <span className="text-outline mt-1 block font-display text-5xl italic md:text-7xl">
+          &amp; Partners
+        </span>
+      </h2>
+
+      {isEmpty ? (
+        <p className="text-ink-muted">Client list coming soon.</p>
+      ) : (
+        <div className="flex flex-col gap-16">
+          <Group title="Clients" entries={clients} />
+          <Group title="Partners" entries={partners} />
+        </div>
+      )}
     </section>
   )
 }

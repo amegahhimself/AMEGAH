@@ -3,15 +3,33 @@
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 
+import type { SiteSettings } from '@/sanity/lib/content'
+
 type NavDiscipline = { title: string; slug: string }
 
+// These scroll to sections on the homepage rather than routing to a
+// dedicated page — see app/page.tsx. `/#about` (with the leading slash)
+// works from any route: Next.js navigates home first, then scrolls, exactly
+// like a plain anchor does when already on `/`. No standalone Contact link:
+// the "Hire {name}" CTA already points at `/#contact`, so a plain Contact
+// link would be a redundant second route to the same anchor.
 const STANDING_LINKS = [
-  { title: 'About', href: '/about' },
-  { title: 'Clients', href: '/clients' },
-  { title: 'Contact', href: '/contact' },
+  { title: 'About', href: '/#about' },
+  { title: 'Clients', href: '/#clients' },
 ]
 
-export function SiteHeader({ disciplines }: { disciplines: NavDiscipline[] }) {
+// Matches HomeHero's own fallback, so the header and hero never disagree
+// about the name when Site Settings hasn't been published yet.
+const FALLBACK_NAME = 'Amegah'
+
+export function SiteHeader({
+  disciplines,
+  settings,
+}: {
+  disciplines: NavDiscipline[]
+  settings: SiteSettings | null
+}) {
+  const name = settings?.name || FALLBACK_NAME
   const [open, setOpen] = useState(false)
   const menuButtonRef = useRef<HTMLButtonElement>(null)
   const navRef = useRef<HTMLElement>(null)
@@ -68,12 +86,17 @@ export function SiteHeader({ disciplines }: { disciplines: NavDiscipline[] }) {
   return (
     <>
       <header className="sticky top-0 z-50 border-b border-hairline bg-ground/80 backdrop-blur">
-        <div className="flex items-center justify-between px-6 py-5">
-          <Link href="/" className="font-display text-lg tracking-tight text-ink">
-            Amegah
+        <div className="flex items-center justify-between px-6 py-4">
+          <Link href="/" className="leading-none">
+            <span className="font-condensed block text-xl uppercase tracking-tight text-ink">
+              {name}
+            </span>
+            {settings?.role && (
+              <span className="index-meta mt-0.5 block !text-accent">{settings.role}</span>
+            )}
           </Link>
 
-          <nav className="hidden gap-8 md:flex">
+          <nav className="hidden items-center gap-8 md:flex">
             {links.map((link) => (
               <Link
                 key={link.href}
@@ -83,6 +106,12 @@ export function SiteHeader({ disciplines }: { disciplines: NavDiscipline[] }) {
                 {link.title}
               </Link>
             ))}
+            <Link
+              href="/#contact"
+              className="index-meta inline-flex min-h-11 items-center border border-accent px-4 !text-accent transition-colors hover:bg-accent hover:!text-accent-ink"
+            >
+              Hire {name.split(' ')[0]}
+            </Link>
           </nav>
 
           <button
@@ -91,7 +120,7 @@ export function SiteHeader({ disciplines }: { disciplines: NavDiscipline[] }) {
             aria-label="Menu"
             aria-expanded={open}
             onClick={() => setOpen((value) => !value)}
-            className="index-meta inline-flex min-h-11 min-w-11 items-center justify-center md:hidden"
+            className="index-meta inline-flex min-h-11 min-w-11 items-center justify-center border border-hairline px-3 transition-colors hover:border-ink-soft md:hidden"
           >
             {open ? 'Close' : 'Menu'}
           </button>

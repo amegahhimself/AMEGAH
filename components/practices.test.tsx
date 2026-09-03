@@ -10,6 +10,11 @@ const disciplines: Discipline[] = [
 ]
 
 describe('Practices', () => {
+  it('titles the section', () => {
+    render(<Practices disciplines={disciplines} />)
+    expect(screen.getByRole('heading', { name: 'The Work In Motion' })).toBeInTheDocument()
+  })
+
   it('links each practice to its own page', () => {
     render(<Practices disciplines={disciplines} />)
     expect(screen.getByRole('link', { name: /Director/ })).toHaveAttribute('href', '/director')
