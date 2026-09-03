@@ -579,3 +579,91 @@ git commit -m "Record the Phase 6 performance and accessibility verification"
 ## What Phase 6 deliberately leaves out
 
 `previewLoop` hover previews, for the three reasons given in the spec-diff pass above — raise with the user rather than treating as done. Everything else in §11's phase 6 is built or verified here.
+
+---
+
+### Task 6 (added post-verification): Close the two LCP failures Task 5 found
+
+Task 5's Lighthouse runs missed the spec's LCP < 2.5s budget by 2-3x on both measured pages. Both root causes were independently confirmed in source by task review, not inferred from Lighthouse noise alone, and both are narrow enough to fix without a redesign.
+
+**Files:**
+- Modify: `components/home-hero.tsx`
+- Modify: `components/project-card.tsx`
+- Modify: `components/project-card.test.tsx`
+- Modify: `components/work-browser.tsx`
+
+**Root cause 1 — homepage hero has no poster in server HTML.** `HomeHero` loads `HeroReel` via `next/dynamic({ ssr: false })`, so nothing in that subtree exists until JavaScript hydrates and fetches the ~1MB player chunk — no `<img>`, nothing. The LCP element (the poster frame) is undiscoverable until then.
+
+Fix: render a real, `priority` `next/image` poster in `HomeHero` itself — which DOES server-render, since only the inner `HeroReel` import is `ssr: false` — stacked behind where `HeroReel` mounts. Once hydrated, `MuxPlayer`'s own `poster` prop paints the identical image, so there is no visible change; only the *first paint* moves from "nothing" to "the real poster, in the initial HTML."
+
+Currently `poster` comes only from `posterUrl(still)`, i.e. `settings.heroImages[0]` — a field that's hidden in Studio whenever `heroVariant !== 'still'`, so a client who only ever configured the reel treatment may have never set it, leaving `poster` undefined. Add a fallback to Mux's own public, unauthenticated thumbnail CDN — no extra fetch needed, it's pure string construction from the `playbackId` already in hand:
+
+```ts
+const muxPoster = playbackId
+  ? `https://image.mux.com/${playbackId}/thumbnail.jpg?width=2400&fit_mode=smartcrop`
+  : undefined
+const poster = posterUrl(still) ?? muxPoster
+```
+
+Then, inside the `showReel` branch, render the poster image ahead of `<HeroReel>`:
+
+```tsx
+{showReel && (
+  <div className="absolute inset-0 bg-hairline">
+    {poster && (
+      <Image
+        src={poster}
+        alt={name}
+        fill
+        priority
+        sizes="100vw"
+        placeholder={still?.lqip ? 'blur' : 'empty'}
+        blurDataURL={still?.lqip}
+        style={still ? { objectPosition: hotspotPosition(still) } : undefined}
+        className="object-cover"
+      />
+    )}
+    <HeroReel playbackId={playbackId} poster={poster} />
+  </div>
+)}
+```
+
+Note `still` may be undefined when the poster comes from the Mux fallback — guard `hotspotPosition`/`lqip` accordingly, exactly as written above. `next.config.ts` already lists `image.mux.com` in `remotePatterns`, and the custom Sanity image loader (`lib/sanity-image-loader.ts`) passes any non-`cdn.sanity.io` URL through unmodified, so this needs no config change.
+
+**Root cause 2 — the first above-the-fold project card is unconditionally lazy.** `CoverImage` already accepts a `priority` prop (defaults `false` → `loading="lazy"`), but `ProjectCard` never accepts or forwards one, so every card on every discipline page — including the first, which sits directly under the page heading with no hero above it — loads lazily.
+
+Fix: thread `priority` through.
+
+```ts
+// project-card.tsx — add to the props type and forward it
+priority?: boolean
+// ...
+<CoverImage
+  image={image}
+  mobileImage={project.mobileCoverImage}
+  alt={project.title}
+  sizes={sizes ?? layout.sizes}
+  priority={priority}
+  className="transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+/>
+```
+
+```tsx
+// work-browser.tsx — only the very first rendered card is above the fold
+<ProjectCard
+  key={project._id}
+  project={project}
+  index={index}
+  cadence={cadence}
+  priority={index === 0}
+/>
+```
+
+**Deliberately NOT touched: `featured-work.tsx`.** Its grid sits below the homepage hero (which occupies 70-85vh), so its first item is not the LCP candidate there, and Task 5 never measured or confirmed a problem on that page. Forcing `priority` on an off-screen image would spend LCP-priority bandwidth on the wrong element. Scope this fix to what was actually measured.
+
+- [ ] Write a failing test in `project-card.test.tsx` asserting that `priority={true}` produces `loading="eager"`/`fetchpriority="high"` on the rendered `<img>`, and that the default (`priority` omitted) still produces `loading="lazy"` — pin both directions so this can't silently regress either way.
+- [ ] Run it, watch it fail, implement, run again.
+- [ ] Manually verify in a real browser: reload `/` and confirm the poster paints immediately (view source / disable JS should still show an `<img>` for the hero); reload `/cinematographer` and confirm only the first card's image has `loading="eager"` in the DOM, the rest stay `lazy`.
+- [ ] `npm test`, `npx tsc --noEmit`, `npm run lint`, `rm -rf .next && npm run build` all clean.
+- [ ] Re-run the two Lighthouse checks from Task 5 (`/` and `/cinematographer`, mobile profile) and record the before/after LCP numbers in `docs/verification-phase-6.md` — update its "outstanding" section to reflect what's now fixed, or explain honestly if the numbers still miss budget and why.
+- [ ] Commit.
