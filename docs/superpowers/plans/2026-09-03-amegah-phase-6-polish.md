@@ -667,3 +667,53 @@ priority?: boolean
 - [ ] `npm test`, `npx tsc --noEmit`, `npm run lint`, `rm -rf .next && npm run build` all clean.
 - [ ] Re-run the two Lighthouse checks from Task 5 (`/` and `/cinematographer`, mobile profile) and record the before/after LCP numbers in `docs/verification-phase-6.md` — update its "outstanding" section to reflect what's now fixed, or explain honestly if the numbers still miss budget and why.
 - [ ] Commit.
+
+---
+
+### Task 7 (added post-review): Fix the broken Mux poster URL Task 6 shipped
+
+Task 6's review found the homepage hero's Mux poster URL — `?width=2400&fit_mode=smartcrop` — returns HTTP 400 in production, because the source video is 1280px wide and `fit_mode=smartcrop` rejects a crop wider than the source. The `<img>` existed in server HTML (Task 6's actual, narrow claim) but never loaded (`naturalWidth: 0`), so the LCP element stayed the video, exactly as before. Verified independently: Mux accepts `width=2400` alone (no `fit_mode`) against the same 1280px source and returns 200 — it performs a plain proportional resize, not a crop, when no `fit_mode`/`height` pair is given.
+
+A second, related bug in the same code path: the custom `next/image` loader (`lib/sanity-image-loader.ts`) passes any non-`cdn.sanity.io` URL through **unmodified**, so every breakpoint in `next/image`'s generated `srcset` for the Mux poster resolves to the exact same hardcoded URL — a phone downloads the full desktop-sized file.
+
+**Files:**
+- Modify: `lib/sanity-image-loader.ts`
+- Modify: `lib/sanity-image-loader.test.ts`
+- Modify: `components/home-hero.tsx`
+
+**Fix 1 — the loader gets a second branch for Mux thumbnails**, giving them real per-breakpoint widths the same way Sanity images already get them, and never emitting `fit_mode` (which is what caused the 400):
+
+```ts
+if (url.hostname === 'image.mux.com') {
+  // Mux's thumbnail API takes `width` (not Sanity's `w`), and rejects
+  // fit_mode=smartcrop whenever the requested width exceeds the source
+  // video's own resolution (verified: a 1280px-wide source 400s on
+  // width=2400&fit_mode=smartcrop but accepts width=2400 alone, which
+  // performs a plain proportional resize instead of a crop).
+  url.searchParams.set('width', String(width))
+  url.searchParams.delete('fit_mode')
+  return url.toString()
+}
+```
+
+Add this alongside the existing `cdn.sanity.io` branch (same function, same file — `next/image` only accepts one `loaderFile`).
+
+**Fix 2 — `home-hero.tsx` stops requesting a fixed width in the base URL**, since the loader now injects the correct one per breakpoint:
+
+```ts
+const muxPoster = playbackId
+  ? `https://image.mux.com/${playbackId}/thumbnail.jpg`
+  : undefined
+```
+
+(No `?width=…` or `&fit_mode=…` — the loader adds `width` itself.)
+
+**Fix 3 — `alt={name}` on the poster `<Image>` should be `alt=""`.** It's a decorative background stand-in for the video (the visible name is the separate `<h1>` a few lines below), so a screen reader announcing it duplicates the heading.
+
+- [ ] Write failing tests in `lib/sanity-image-loader.test.ts` for the new branch: given an `image.mux.com` URL, the loader sets `width` to the requested value, and never emits `fit_mode` even if the input URL had one. Run, watch fail, implement, run again.
+- [ ] Update `home-hero.tsx` per Fix 2 and Fix 3.
+- [ ] `npm test`, `npx tsc --noEmit`, `npm run lint` all clean.
+- [ ] `rm -rf .next && npm run build && npm run start` (kill anything on port 3000 first). **Curl the actual constructed poster URL yourself and confirm HTTP 200** — quote the exact URL and status code in your report. This is the specific check Task 6 skipped; do not repeat that mistake.
+- [ ] Load `/` in a real browser (or headless) and confirm the poster image genuinely paints (non-zero `naturalWidth`), not just that an `<img>` tag exists in HTML.
+- [ ] Re-run the same Lighthouse check Task 5/6 used against `/` (mobile profile), record the new LCP, and update `docs/verification-phase-6.md` honestly. **Do not claim the 2.5s budget is met unless the number actually shows it.** If it's still over budget — plausible, since the ~1MB player chunk and the poster's own weight may still dominate — say so plainly with the real number and leave it as a known, explained gap rather than another excuse. This task's bar is "the poster is real and correctly sized," not "the budget is met."
+- [ ] Commit.
