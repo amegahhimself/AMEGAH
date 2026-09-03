@@ -717,3 +717,64 @@ const muxPoster = playbackId
 - [ ] Load `/` in a real browser (or headless) and confirm the poster image genuinely paints (non-zero `naturalWidth`), not just that an `<img>` tag exists in HTML.
 - [ ] Re-run the same Lighthouse check Task 5/6 used against `/` (mobile profile), record the new LCP, and update `docs/verification-phase-6.md` honestly. **Do not claim the 2.5s budget is met unless the number actually shows it.** If it's still over budget — plausible, since the ~1MB player chunk and the poster's own weight may still dominate — say so plainly with the real number and leave it as a known, explained gap rather than another excuse. This task's bar is "the poster is real and correctly sized," not "the budget is met."
 - [ ] Commit.
+
+---
+
+### Task 8 (added post-whole-branch-review): Close the whole-branch review's four findings
+
+The whole-branch final review (which looks at everything together, catching what task-by-task review structurally can't) found two real bugs still on the LCP-critical path, and two real test-coverage gaps — including one in exactly the file that shipped Task 6's original broken-URL bug, which no test currently guards against recurring.
+
+**Files:**
+- Modify: `components/home-hero.tsx`
+- Modify: `components/home-hero.test.tsx`
+- Modify: `lib/sanity-image-loader.ts`
+- Modify: `lib/sanity-image-loader.test.ts`
+- Modify: `components/site-header.test.tsx`
+- Modify: `app/[discipline]/page.tsx`
+
+**Finding 1 — the hero poster downloads twice.** `<HeroReel playbackId={playbackId} poster={poster} />` (home-hero.tsx:80) passes the bare, loader-unaware `poster` string straight through to `MuxPlayer`, which renders its own `<img>` in shadow DOM from that literal URL — a second, separate fetch from the `priority` `<Image>` rendered just above it, which the loader resizes per breakpoint. Confirmed live: two distinct 200s for the same frame.
+
+Before writing the fix, determine empirically (not by guessing) which of these is true, since it changes the fix:
+- Does `MuxPlayer` rendered with NO `poster` prop show a black/blank flash before the video buffers, or does our own `<Image>` — already painted in the same absolute-fill position — simply show through underneath it?
+
+Test this in a real browser against the production build. If our own Image shows through cleanly with no `poster` prop on `HeroReel`, the fix is simply to stop passing `poster` to `HeroReel` at all — delete the prop, since it is now fully redundant with the `<Image>` already rendered beside it. If removing it causes a visible gap, instead construct one single, width-capped poster URL string (see Finding 2's clamp) and pass that identical string to both places, so the two requests can at least be served from one HTTP cache entry. Document in a code comment which you found and why.
+
+**Finding 2 — the loader lets the Mux poster be upscaled absurdly.** The source video frame is 1280×720; on a high-DPR viewport requesting `sizes="100vw"`, `next/image`'s largest candidate asks for `width=3840` — Mux honours it, returning a genuine 3840×2160, ~760KB upscale of a 720p source. Clamp it in the loader's `image.mux.com` branch:
+
+```ts
+if (url.hostname === 'image.mux.com') {
+  // Mux's thumbnail API takes `width` (not Sanity's `w`), and rejects
+  // fit_mode=smartcrop whenever the requested width exceeds the source
+  // video's own resolution — fit_mode is dropped unconditionally rather
+  // than worked around. Clamped to 1920: this poster is a full-bleed
+  // background behind a video player, never a print-quality asset, and an
+  // unclamped request can ask Mux to upscale a source video far past its
+  // own resolution for no visible gain (a 1280x720 source was seen
+  // upscaled to a 3840x2160, ~760KB request on a high-DPR full-width view).
+  url.searchParams.set('width', String(Math.min(width, 1920)))
+  url.searchParams.delete('fit_mode')
+  return url.toString()
+}
+```
+
+- [ ] Add a test in `lib/sanity-image-loader.test.ts`: requesting `width: 3840` against an `image.mux.com` URL produces `width=1920` in the output, not `3840`. Watch it fail against the current unclamped code, then implement.
+
+**Finding 3 — `home-hero.tsx` has no test for anything Task 6/7 touched.** This is the exact file that shipped a URL with `fit_mode=smartcrop`, which 400'd in production, undetected by any test because none existed. Add to `home-hero.test.tsx`:
+- [ ] A test asserting that whatever poster URL `HomeHero` constructs for the reel treatment never contains `fit_mode` in its query string (this is the literal regression that shipped once already — pin it directly so it cannot recur silently).
+- [ ] A test asserting a poster image actually renders in the reel branch when a `playbackId` is present but `heroImages` is empty (the Mux-thumbnail-fallback path this whole chain of fixes was for) — use the existing render + `screen` conventions already in this file.
+
+**Finding 4 — the mobile-menu focus trap (built in Task 5) has no automated test**, verified only by a one-off manual script. Add to `components/site-header.test.tsx`, using `@testing-library/user-event` (already a project dependency, used in `work-browser.test.tsx` and `category-filter-bar.test.tsx` — follow their conventions):
+- [ ] Opening the menu moves focus to the first link (not the trigger button itself).
+- [ ] Tabbing from the last focusable element cycles back to the first (the menu button), not out of the menu.
+- [ ] Shift+Tab from the first focusable element cycles to the last.
+- [ ] Escape closes the menu and returns focus to the trigger button.
+
+**Also, trivial and unambiguous — fix inline, no test needed:** `app/[discipline]/page.tsx`'s `openGraph.type` is `'article'`. A discipline page is a listing/index page, not a single article — change to `'website'`.
+
+**Explicitly not fixed, logged as accepted:** the focus trap's keydown listener stays armed if the menu opens on mobile and the viewport is then resized past the `md` breakpoint without closing it, where the nav becomes `display:none` — focus would cycle through invisible links. Real-world frequency is low (requires opening the menu then resizing past a breakpoint without closing it) and a correct fix needs a `matchMedia` listener alongside the existing effect, which is a second, different kind of complexity from what Task 5 built. Worth a future task if it turns out to matter in practice; not blocking here.
+
+- [ ] `npm test`, `npx tsc --noEmit`, `npm run lint` all clean.
+- [ ] `rm -rf .next && npm run build && npm run start` (kill port 3000 first). Confirm in the browser's network panel (or by curling the two poster-related URLs directly) that the hero poster now fires exactly ONE request for the poster image, not two.
+- [ ] Commit.
+
+This closes Phase 6. After this task, the branch is ready for a final scoped re-review of just this diff (not another whole-branch pass), then `finishing-a-development-branch`.
