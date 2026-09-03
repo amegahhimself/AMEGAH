@@ -1,10 +1,9 @@
-import Image from 'next/image'
 import Link from 'next/link'
 
 import { cadenceLayout } from '@/lib/cadence'
-import { hotspotPosition, indexLabel } from '@/lib/card-meta'
+import { indexLabel } from '@/lib/card-meta'
 import type { Cadence, ProjectCardData } from '@/sanity/lib/content'
-import { urlFor } from '@/sanity/lib/image'
+import { CoverImage } from './cover-image'
 
 export function ProjectCard({
   project,
@@ -34,18 +33,13 @@ export function ProjectCard({
         className={`relative overflow-hidden bg-hairline ${layout.aspect ?? (ratio ? '' : 'aspect-[4/5]')}`}
         style={ratio ? { aspectRatio: String(ratio) } : undefined}
       >
-        {image?.asset ? (
-          <Image
-            src={urlFor(image).width(1600).auto('format').url()}
-            alt={project.title}
-            fill
-            sizes={sizes ?? layout.sizes}
-            placeholder={image.lqip ? 'blur' : 'empty'}
-            blurDataURL={image.lqip}
-            style={{ objectPosition: hotspotPosition(image) }}
-            className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
-          />
-        ) : null}
+        <CoverImage
+          image={image}
+          mobileImage={project.mobileCoverImage}
+          alt={project.title}
+          sizes={sizes ?? layout.sizes}
+          className="transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+        />
       </div>
 
       <p className="index-meta mt-4">
