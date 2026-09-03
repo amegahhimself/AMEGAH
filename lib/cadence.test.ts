@@ -18,7 +18,7 @@ describe('cadenceLayout', () => {
   it('gives Photography a portrait-led editorial rhythm', () => {
     const layout = cadenceLayout('editorial')
     expect(layout.grid).toContain('lg:grid-cols-3')
-    expect(layout.aspect).toBe('aspect-[4/5]')
+    expect(layout.aspect).toBeUndefined()
   })
 
   it('starts every cadence at one column so mobile is single-column', () => {
@@ -29,5 +29,16 @@ describe('cadenceLayout', () => {
 
   it('falls back to editorial for a discipline with no cadence set', () => {
     expect(cadenceLayout(undefined)).toEqual(cadenceLayout('editorial'))
+  })
+})
+
+describe('editorial cadence', () => {
+  it('pins no aspect ratio, so cards take the shape of the photograph', () => {
+    expect(cadenceLayout('editorial').aspect).toBeUndefined()
+  })
+
+  it('still pins one for the film cadences, whose rhythm is the point', () => {
+    expect(cadenceLayout('cinematic').aspect).toBe('aspect-video')
+    expect(cadenceLayout('filmstrip').aspect).toBe('aspect-[3/2]')
   })
 })

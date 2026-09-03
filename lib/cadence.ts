@@ -3,8 +3,10 @@ import type { Cadence } from '@/sanity/lib/content'
 export type CadenceLayout = {
   /** Tailwind grid classes for the project grid. */
   grid: string
-  /** Tailwind aspect-ratio class for each card's image. */
-  aspect: string
+  /** Tailwind aspect-ratio class for each card's image. Omitted when the
+   *  cadence has no fixed shape — the card then takes its aspect ratio
+   *  from the image itself. */
+  aspect?: string
   /** The `sizes` attribute for next/image, matching the grid's columns. */
   sizes: string
 }
@@ -27,7 +29,9 @@ const LAYOUTS: Record<Cadence, CadenceLayout> = {
   },
   editorial: {
     grid: 'grid grid-cols-1 gap-x-6 gap-y-16 sm:grid-cols-2 lg:grid-cols-3',
-    aspect: 'aspect-[4/5]',
+    // No `aspect` here, deliberately: spec 6.3 wants the photographer's grid
+    // "mixed portrait/landscape, varied heights" — that variation has to
+    // come from each photograph's own shape, not a rhythm pinned by cadence.
     sizes: '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw',
   },
 }

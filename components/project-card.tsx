@@ -22,9 +22,18 @@ export function ProjectCard({
   const layout = cadenceLayout(cadence)
   const image = project.coverImage
 
+  // When the cadence pins no aspect (editorial), take the shape of the
+  // photograph itself (spec 6.3: "mixed portrait/landscape, varied
+  // heights"). An image with no aspectRatio in its metadata falls back to
+  // aspect-[4/5] so the card can never collapse to zero height.
+  const ratio = layout.aspect ? undefined : image?.aspectRatio
+
   return (
     <Link href={`/work/${project.slug}`} className="group block">
-      <div className={`relative overflow-hidden bg-hairline ${layout.aspect}`}>
+      <div
+        className={`relative overflow-hidden bg-hairline ${layout.aspect ?? (ratio ? '' : 'aspect-[4/5]')}`}
+        style={ratio ? { aspectRatio: String(ratio) } : undefined}
+      >
         {image?.asset ? (
           <Image
             src={urlFor(image).width(1600).auto('format').url()}
