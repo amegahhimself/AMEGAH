@@ -1,6 +1,7 @@
 import { featuredSpan } from '@/lib/featured-layout'
 import type { ProjectCardData } from '@/sanity/lib/content'
 import { ProjectCard } from './project-card'
+import { Reveal } from './reveal'
 
 export function FeaturedWork({ projects }: { projects: ProjectCardData[] }) {
   if (projects.length === 0) return null
@@ -12,14 +13,14 @@ export function FeaturedWork({ projects }: { projects: ProjectCardData[] }) {
         {projects.map((project, index) => {
           const span = featuredSpan(index)
           return (
-            <div key={project._id} className={span === 'full' ? 'md:col-span-2' : undefined}>
+            <Reveal key={project._id} className={span === 'full' ? 'md:col-span-2' : undefined}>
               <ProjectCard
                 project={project}
                 index={index}
                 cadence={span === 'full' ? 'cinematic' : 'editorial'}
                 sizes={span === 'full' ? '100vw' : '(min-width: 768px) 50vw, 100vw'}
               />
-            </div>
+            </Reveal>
           )
         })}
       </div>
