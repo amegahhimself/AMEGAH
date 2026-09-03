@@ -71,6 +71,9 @@ export const DISCIPLINE_BY_SLUG_QUERY = `*[_type == "discipline" && slug.current
   title,
   "slug": slug.current,
   description,
+  "coverImage": coverImage{
+    ${IMAGE_FIELDS}
+  },
   cadence
 }`
 
@@ -88,6 +91,7 @@ export const PROJECT_DETAIL_QUERY = `*[_type == "project" && slug.current == $sl
   year,
   description,
   "coverImage": coverImage${IMAGE_PROJECTION},
+  "mobileCoverImage": mobileCoverImage${IMAGE_PROJECTION},
   "muxVideo": muxVideo.asset->{playbackId, assetId},
   "gallery": gallery[]{
     ${IMAGE_FIELDS},

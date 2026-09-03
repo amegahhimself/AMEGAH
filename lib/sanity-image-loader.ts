@@ -33,6 +33,20 @@ export default function sanityImageLoader({
     return src
   }
 
+  if (url.hostname === 'image.mux.com') {
+    // Mux's thumbnail API takes `width` (not Sanity's `w`), and rejects
+    // fit_mode=smartcrop whenever the requested width exceeds the source
+    // video's own resolution — fit_mode is dropped unconditionally rather
+    // than worked around. Clamped to 1920: this poster is a full-bleed
+    // background behind a video player, never a print-quality asset, and an
+    // unclamped request can ask Mux to upscale a source video far past its
+    // own resolution for no visible gain (a 1280x720 source was seen
+    // upscaled to a 3840x2160, ~760KB request on a high-DPR full-width view).
+    url.searchParams.set('width', String(Math.min(width, 1920)))
+    url.searchParams.delete('fit_mode')
+    return url.toString()
+  }
+
   if (url.hostname !== 'cdn.sanity.io') {
     return src
   }

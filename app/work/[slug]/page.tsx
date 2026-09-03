@@ -8,6 +8,7 @@ import { Prose, hasProse } from '@/components/prose'
 import { adjacentProjects } from '@/lib/adjacent-projects'
 import { creditLine } from '@/lib/credits'
 import { getDisciplineProjectRefs, getProjectBySlug } from '@/sanity/lib/content'
+import { urlFor } from '@/sanity/lib/image'
 
 // No generateStaticParams: this route's params come from CMS content, and a
 // CMS-driven route must not depend on content existing at build time — an
@@ -18,9 +19,27 @@ export async function generateMetadata({ params }: PageProps<'/work/[slug]'>) {
   const { slug } = await params
   const project = await getProjectBySlug(slug)
   if (!project) return {}
+
+  const title = `${project.title} — Amegah`
+  const description = creditLine(project)
+  const ogImage = project.coverImage?.asset
+    ? urlFor(project.coverImage).width(1200).height(630).auto('format').url()
+    : undefined
+
   return {
-    title: `${project.title} — Amegah`,
-    description: creditLine(project),
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'article',
+      // Next 16 merges metadata with `metadata[key] ?? null`, so an explicit
+      // `images: undefined` becomes `null` and overwrites (rather than
+      // inherits) the parent's images
+      // (node_modules/next/dist/lib/metadata/resolve-metadata.js). Omitting
+      // the key entirely when there's no cover image lets inheritance work.
+      ...(ogImage && { images: [{ url: ogImage, width: 1200, height: 630 }] }),
+    },
   }
 }
 

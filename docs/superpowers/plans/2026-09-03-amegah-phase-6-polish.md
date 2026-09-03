@@ -1,0 +1,780 @@
+# Amegah Portfolio — Phase 6: Polish
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** The final planned phase — motion, mobile art direction, the editorial grid's varied heights, social share images, and a verification pass against the performance budget and accessibility.
+
+**Architecture:** Mostly additive. One new client component for scroll reveals, one for art-directed covers. The editorial cadence stops using a fixed aspect ratio and follows each image's real shape. Verification is measurement, not code.
+
+**Tech Stack:** Next.js 16 (App Router, Cache Components, PPR), React 19.2, TypeScript, Tailwind CSS v4, Sanity v5, Vitest + React Testing Library.
+
+**Spec:** `docs/superpowers/specs/2026-09-01-amegah-portfolio-design.md` (§5.3 motion, §6.3 cadence, §7.2 images, §7.4 performance, §8 mobile, §11 phase 6)
+**Builds on:** Phases 1–5, all merged to `main`. The dataset now holds placeholder content, so this is the first phase that can be verified against a populated site.
+
+## Spec-diff pass
+
+Standing requirement since Phase 4's plan dropped two spec elements silently: enumerate every element this phase owns and mark it built or deferred, before execution. Each row below was checked against the actual code, not from memory.
+
+| Spec element | State found | Decision |
+|---|---|---|
+| §5.3 IntersectionObserver reveals (fade + 8px rise) | No `IntersectionObserver` anywhere | **Build** (Task 1) |
+| §5.3 Respect `prefers-reduced-motion` | `app/globals.css:165` kills animations/transitions globally | **Already built** — Task 1 must also gate the observer itself, since a CSS rule cannot stop JS adding a class |
+| §5.3 Nav hairline underline transitions | Present in `site-header.tsx` | **Already built** |
+| §5.3 No parallax / scroll-jacking / cursor effects | None present | **Nothing to do** — and nothing in this phase may add any |
+| §6.3 `editorial` cadence — mixed portrait/landscape, varied heights | `lib/cadence.ts:30` pins every card to `aspect-[4/5]` | **Build** (Task 2) |
+| §6.3 `cinematic` / `filmstrip` cadences | Built in `lib/cadence.ts` | **Already built** |
+| §7.2 `mobileCoverImage` art direction | Fetched in `queries.ts`/`content.ts`, used by **no component** | **Build** (Task 3) |
+| §7.2 LQIP, hotspot crops, Sanity CDN via `next/image` | Built throughout | **Already built** |
+| §8 Full-screen overlay mobile menu | `site-header.tsx:55` | **Already built** |
+| §8 ≥44px touch targets | `min-h-11` used at every interactive site | **Already built** — Task 5 verifies |
+| §8 Gallery single column on mobile | Every cadence starts `grid-cols-1` | **Already built** |
+| §11 Metadata / OG images | Homepage only (`app/page.tsx`); project and discipline pages have title+description, no image | **Build** (Task 4) |
+| §7.4 Performance budget (LCP < 2.5s 4G, CLS < 0.1) | Never measured | **Verify** (Task 5) |
+| §11 Accessibility check | Never run | **Verify** (Task 5) |
+| §7.3 `previewLoop` hover previews | Schema field exists; used by no component | **Deferred — see below** |
+
+### Deferring `previewLoop`, with reasons
+
+The spec sanctions autoplay for "hero loop and hover previews only", so hover previews are genuinely specified. They are still the wrong thing to build now:
+
+1. **It is the one video path that does not go through Mux.** `previewLoop` is a plain Sanity `file`, so each clip is served unoptimised from Sanity's CDN at whatever size the client exported — no adaptive bitrate, no transcoding. A grid of them is exactly the payload §7.4's budget is meant to prevent.
+2. **It asks the client for a second asset per project** — a short muted export, separate from the film — which nothing in the brief says they have.
+3. **On touch it degrades to nothing.** §8 says hover previews are "replaced by tap", and tap already opens the project.
+
+Recommendation: leave the schema field, build the feature only if the client asks once they have real work in the site, and use Mux for it. Recorded here as a decision, not an omission — this is the element to raise with the user at the end of the phase.
+
+## Global Constraints
+
+- **Next.js 16 with Cache Components.** Never add `generateStaticParams` — over CMS content it hard-errors on an empty dataset (the Phase 3 build break).
+- **Design tokens only** — `bg-ground`, `text-ink`, `text-ink-soft`, `text-ink-muted`, `border-hairline`, `bg-hairline`, `font-display`, `.index-meta`, `--measure`. **No ad-hoc colours.** Run `grep -rn "white/\|black/\|bg-\[#\|text-\[#" app components` before every commit; violated twice already.
+- **Colour palette (brief §7):** background `#0A0A0A`, text `#FFFFFF`, subtext `#D8D8D3`, grey accents `#8A8A85`. No accent colour.
+- **Empty-dataset resilience.** Every page must still render sensibly with no content and never throw. The dataset has placeholders now — that makes it *easier* to forget this, not less important.
+- **Touch targets ≥44px.** `min-height` is inert on plain inline elements.
+- **CSS-first motion.** §7.4: "No animation library unless a need survives review." Nothing in this phase justifies one.
+- **All motion respects `prefers-reduced-motion`**, including JavaScript-driven motion, which the global CSS rule cannot reach.
+- **Never commit secrets.**
+
+## Decisions this plan locks in
+
+1. **Reveals are opt-in via a wrapper component**, not a global scroll listener. One `IntersectionObserver` per revealed element, disconnected after firing — no scroll handler, nothing retained.
+2. **Elements start visible and are hidden only once JS confirms it can animate them.** If JS fails or is disabled, the site is fully readable. This is the opposite of the common `opacity-0` default, which leaves a blank page when the observer never runs.
+3. **Editorial varied heights come from the images themselves**, using the `aspectRatio` already in `SanityImage`, not from alternating hardcoded ratios. The client's own mix of portrait and landscape produces the rhythm §6.3 describes.
+4. **Art direction uses `<picture>`, not two `<Image>`s.** Toggling two `next/image` elements with `hidden`/`md:block` makes browsers fetch both — the opposite of the intent. `<picture>` with a `media` source is the correct primitive; the cost is hand-writing `srcset`, `width`/`height` and `loading`, which Task 3 does explicitly.
+5. **OG images reuse existing cover images** rather than generating them at runtime with `ImageResponse`. Sanity can already crop to 1200×630, and a generated image would be one more thing to render on every crawl.
+
+---
+
+### Task 1: Reveal-on-scroll motion
+
+**Files:**
+- Create: `components/reveal.tsx`
+- Create: `components/reveal.test.tsx`
+- Modify: `app/globals.css`
+
+**Interfaces:**
+- Produces: `<Reveal>{children}</Reveal>` — fades and rises its children 8px when they enter the viewport, once.
+
+- [ ] **Step 1: Write the failing tests**
+
+Create `components/reveal.test.tsx`:
+
+```tsx
+import { render, screen } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { Reveal } from './reveal'
+
+let observe: ReturnType<typeof vi.fn>
+let disconnect: ReturnType<typeof vi.fn>
+let trigger: (entries: { isIntersecting: boolean }[]) => void
+
+function mockMatchMedia(reduced: boolean) {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn().mockReturnValue({
+      matches: reduced,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }),
+  )
+}
+
+beforeEach(() => {
+  observe = vi.fn()
+  disconnect = vi.fn()
+  vi.stubGlobal(
+    'IntersectionObserver',
+    vi.fn().mockImplementation((callback) => {
+      trigger = callback
+      return { observe, disconnect, unobserve: vi.fn() }
+    }),
+  )
+  mockMatchMedia(false)
+})
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
+describe('Reveal', () => {
+  it('always renders its children, so content never depends on the animation', () => {
+    render(
+      <Reveal>
+        <p>A still from the film</p>
+      </Reveal>,
+    )
+    expect(screen.getByText('A still from the film')).toBeInTheDocument()
+  })
+
+  it('watches for the element entering the viewport', () => {
+    render(
+      <Reveal>
+        <p>Watched</p>
+      </Reveal>,
+    )
+    expect(observe).toHaveBeenCalled()
+  })
+
+  it('marks the element revealed once it enters the viewport', () => {
+    render(
+      <Reveal>
+        <p>Revealed</p>
+      </Reveal>,
+    )
+    trigger([{ isIntersecting: true }])
+    expect(screen.getByText('Revealed').parentElement).toHaveAttribute(
+      'data-revealed',
+      'true',
+    )
+  })
+
+  it('stops observing after revealing, rather than watching forever', () => {
+    render(
+      <Reveal>
+        <p>Done</p>
+      </Reveal>,
+    )
+    trigger([{ isIntersecting: true }])
+    expect(disconnect).toHaveBeenCalled()
+  })
+
+  it('never hides anything when the visitor asked for reduced motion', () => {
+    mockMatchMedia(true)
+    render(
+      <Reveal>
+        <p>No motion</p>
+      </Reveal>,
+    )
+    expect(screen.getByText('No motion').parentElement).toHaveAttribute(
+      'data-revealed',
+      'true',
+    )
+    expect(observe).not.toHaveBeenCalled()
+  })
+})
+```
+
+- [ ] **Step 2: Run the tests to verify they fail**
+
+Run: `npx vitest run components/reveal.test.tsx`
+Expected: FAIL — cannot resolve `./reveal`.
+
+- [ ] **Step 3: Implement it**
+
+Create `components/reveal.tsx`:
+
+```tsx
+'use client'
+
+import { useEffect, useRef, useState } from 'react'
+
+/**
+ * Fades and rises its children into view once (spec §5.3).
+ *
+ * The element starts REVEALED and is hidden only after JavaScript has
+ * confirmed it can animate it. If JS never runs, the observer never fires, or
+ * the visitor prefers reduced motion, the content is simply visible — the
+ * failure mode of the usual `opacity-0` default is a permanently blank page.
+ *
+ * One observer per element, disconnected the moment it fires: no scroll
+ * handler, nothing retained after the reveal.
+ */
+export function Reveal({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [revealed, setRevealed] = useState(true)
+
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    // Guard for environments without the API rather than shipping a broken
+    // hidden state to them.
+    if (typeof IntersectionObserver === 'undefined') return
+
+    const element = ref.current
+    if (!element) return
+
+    setRevealed(false)
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setRevealed(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '0px 0px -10% 0px' },
+    )
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [])
+
+  return (
+    <div ref={ref} data-revealed={revealed} className="reveal">
+      {children}
+    </div>
+  )
+}
+```
+
+- [ ] **Step 4: Add the CSS**
+
+In `app/globals.css`, after the existing utility classes, add:
+
+```css
+/* Spec 5.3: media fades and rises 8px as it enters the viewport. Driven by
+   a data attribute so the JS only toggles state and CSS owns the motion.
+   The reduced-motion block below already flattens the duration, and
+   components/reveal.tsx additionally never hides anything in that case. */
+.reveal {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 700ms ease-out,
+    transform 700ms ease-out;
+}
+
+.reveal[data-revealed='false'] {
+  opacity: 0;
+  transform: translateY(8px);
+}
+```
+
+- [ ] **Step 5: Run the tests**
+
+Run: `npx vitest run components/reveal.test.tsx`
+Expected: PASS (5 tests).
+
+- [ ] **Step 6: Apply it to media**
+
+Wrap the revealing elements — the featured items in `components/featured-work.tsx`, the triptych cards in `components/practices.tsx`, and the gallery figures in `components/project-gallery.tsx`. Do **not** wrap the hero, the site header, or anything above the fold: revealing content that is already on screen at load is a flash, not an effect.
+
+Run `npm test` after wiring; existing component tests must still pass.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add components/reveal.tsx components/reveal.test.tsx app/globals.css components/
+git commit -m "Reveal media as it enters the viewport"
+```
+
+---
+
+### Task 2: Editorial cadence — varied heights
+
+**Files:**
+- Modify: `lib/cadence.ts`
+- Modify: `lib/cadence.test.ts`
+- Modify: `components/project-card.tsx`
+
+**Interfaces:**
+- Produces: `CadenceLayout.aspect` becomes optional. When absent, the card sizes itself from the image's own `aspectRatio`.
+
+Spec §6.3 asks the editorial rhythm for "mixed portrait/landscape, varied heights". Every card is currently pinned to `aspect-[4/5]`, so a photographer's landscape work is cropped to portrait and every row is the same height.
+
+- [ ] **Step 1: Write the failing test**
+
+Append to `lib/cadence.test.ts`:
+
+```ts
+describe('editorial cadence', () => {
+  it('pins no aspect ratio, so cards take the shape of the photograph', () => {
+    expect(cadenceLayout('editorial').aspect).toBeUndefined()
+  })
+
+  it('still pins one for the film cadences, whose rhythm is the point', () => {
+    expect(cadenceLayout('cinematic').aspect).toBe('aspect-video')
+    expect(cadenceLayout('filmstrip').aspect).toBe('aspect-[3/2]')
+  })
+})
+```
+
+- [ ] **Step 2: Run it to verify it fails**
+
+Run: `npx vitest run lib/cadence.test.ts`
+Expected: FAIL — editorial's aspect is `aspect-[4/5]`.
+
+- [ ] **Step 3: Make the aspect optional**
+
+In `lib/cadence.ts`, change the type to `aspect?: string`, update the doc comment, and drop the `aspect` key from `editorial` only. Add a comment on `editorial` explaining that omitting it is deliberate — the varied heights of §6.3 come from the images.
+
+- [ ] **Step 4: Use the image's own ratio in the card**
+
+In `components/project-card.tsx`, where the image wrapper currently applies `layout.aspect`, fall back to the image's real ratio when the cadence pins none:
+
+```tsx
+const ratio = layout.aspect
+  ? undefined
+  : project.coverImage?.aspectRatio
+```
+
+Apply `className={layout.aspect ?? ''}` and, when `ratio` is set, `style={{ aspectRatio: String(ratio) }}`. When neither exists — an image with no `aspectRatio` in its metadata — fall back to `aspect-[4/5]` so the card can never collapse to zero height.
+
+Read the file before editing; keep every existing class on that wrapper.
+
+- [ ] **Step 5: Verify**
+
+Run: `npm test && npx tsc --noEmit`
+Expected: all PASS.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add lib/cadence.ts lib/cadence.test.ts components/project-card.tsx
+git commit -m "Let the editorial grid take its rhythm from the photographs"
+```
+
+---
+
+### Task 3: Mobile art direction
+
+**Files:**
+- Create: `components/cover-image.tsx`
+- Create: `components/cover-image.test.tsx`
+- Modify: `components/project-card.tsx`
+- Modify: `components/project-hero.tsx`
+
+**Interfaces:**
+- Produces: `<CoverImage image mobileImage alt sizes priority className />` — renders `mobileImage` below 768px and `image` above, as real art direction.
+
+Spec §7.2 and §8 both call for `mobileCoverImage` as art direction — a portrait-friendly crop the client uploads, not a resize. The field is fetched already and used nowhere.
+
+- [ ] **Step 1: Write the failing tests**
+
+Create `components/cover-image.test.tsx`:
+
+```tsx
+import { render } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
+
+import { CoverImage } from './cover-image'
+import type { SanityImage } from '@/sanity/lib/content'
+
+const wide = { asset: { _ref: 'image-abc-2400x1350-jpg' }, aspectRatio: 1.78 } as SanityImage
+const tall = { asset: { _ref: 'image-def-1080x1350-jpg' }, aspectRatio: 0.8 } as SanityImage
+
+describe('CoverImage', () => {
+  it('renders the image', () => {
+    const { container } = render(<CoverImage image={wide} alt="A still" />)
+    expect(container.querySelector('img')).toHaveAttribute('alt', 'A still')
+  })
+
+  it('offers the mobile crop to narrow screens when the client uploaded one', () => {
+    const { container } = render(
+      <CoverImage image={wide} mobileImage={tall} alt="A still" />,
+    )
+    const source = container.querySelector('source')
+    expect(source).toHaveAttribute('media', '(max-width: 767px)')
+  })
+
+  it('offers no alternate source when there is no mobile crop', () => {
+    const { container } = render(<CoverImage image={wide} alt="A still" />)
+    expect(container.querySelector('source')).toBeNull()
+  })
+
+  it('lazy-loads by default so a grid of covers is not fetched at once', () => {
+    const { container } = render(<CoverImage image={wide} alt="A still" />)
+    expect(container.querySelector('img')).toHaveAttribute('loading', 'lazy')
+  })
+
+  it('loads eagerly when it is the page’s hero', () => {
+    const { container } = render(<CoverImage image={wide} alt="A still" priority />)
+    const img = container.querySelector('img')
+    expect(img).toHaveAttribute('loading', 'eager')
+    expect(img).toHaveAttribute('fetchpriority', 'high')
+  })
+
+  it('reserves layout space so the page does not shift as it loads', () => {
+    const { container } = render(<CoverImage image={wide} alt="A still" />)
+    const img = container.querySelector('img')
+    expect(img).toHaveAttribute('width')
+    expect(img).toHaveAttribute('height')
+  })
+
+  it('renders nothing without an image, rather than an empty box', () => {
+    const { container } = render(<CoverImage alt="A still" />)
+    expect(container).toBeEmptyDOMElement()
+  })
+})
+```
+
+- [ ] **Step 2: Run to verify failure**
+
+Run: `npx vitest run components/cover-image.test.tsx`
+Expected: FAIL — cannot resolve `./cover-image`.
+
+- [ ] **Step 3: Implement it**
+
+Create `components/cover-image.tsx`. Build `srcset` with `urlFor(...).width(w).auto('format').url()` across a small width ladder (640, 1080, 1600, 2400), and set `width`/`height` from the image's `aspectRatio` (fall back to 16:9) so space is reserved and CLS stays at zero.
+
+Explain in a header comment why this is not `next/image`: art direction needs `<picture>` + `media`, and rendering two `next/image` elements toggled with `hidden`/`md:block` makes browsers fetch both — the opposite of the point. Note that the custom Sanity loader means `next/image` was only providing `srcset`, lazy loading and reserved space here, all of which this writes explicitly.
+
+Keep the LQIP blur: set the wrapper's `background-image` to the `lqip` data URI with `background-size: cover`, so the placeholder still shows.
+
+- [ ] **Step 4: Run the tests**
+
+Run: `npx vitest run components/cover-image.test.tsx`
+Expected: PASS (7 tests).
+
+- [ ] **Step 5: Use it**
+
+In `components/project-card.tsx` and `components/project-hero.tsx`, replace the `next/image` cover with `<CoverImage>`, passing `mobileImage={project.mobileCoverImage}`. Keep `priority` on the project hero only. Preserve the existing hotspot `objectPosition` behaviour by passing it through.
+
+Check with `grep -rn "mobileCoverImage" components/` that the field is now actually read.
+
+- [ ] **Step 6: Verify**
+
+Run: `npm test && npx tsc --noEmit && npm run build`
+Expected: all PASS.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add components/cover-image.tsx components/cover-image.test.tsx components/project-card.tsx components/project-hero.tsx
+git commit -m "Use the client's mobile crop on phones"
+```
+
+---
+
+### Task 4: Social share images
+
+**Files:**
+- Modify: `sanity/lib/queries.ts`
+- Modify: `sanity/lib/queries.test.ts`
+- Modify: `app/work/[slug]/page.tsx`
+- Modify: `app/[discipline]/page.tsx`
+
+A link to a project on WhatsApp or Instagram currently previews with no image. Each page already has exactly the right one.
+
+**Defect found while planning — fix this first.** `DISCIPLINE_BY_SLUG_QUERY` projects `_id, title, slug, description, cadence` and **not `coverImage`**, so the discipline page would read `undefined` and silently emit no image. This is the third instance of the same bug class in this project — `DISCIPLINES_QUERY`'s cover in Phase 4, `siteSettings.headshot` in Phase 5 — a field used by a component that the query never fetched. It fails silently every time, which is what makes it worth a test rather than a glance.
+
+- [ ] **Step 0: Project the discipline's cover image**
+
+Append to `sanity/lib/queries.test.ts`:
+
+```ts
+describe('DISCIPLINE_BY_SLUG_QUERY', () => {
+  it('projects the cover image, which the page needs for its share image', () => {
+    expect(DISCIPLINE_BY_SLUG_QUERY).toContain('"coverImage": coverImage{')
+  })
+})
+```
+
+Run it, watch it fail, then add to `DISCIPLINE_BY_SLUG_QUERY` in `sanity/lib/queries.ts`, matching how the neighbouring queries interpolate `IMAGE_FIELDS`:
+
+```
+  "coverImage": coverImage{
+    ${IMAGE_FIELDS}
+  },
+```
+
+Confirm `Discipline` in `sanity/lib/content.ts` already types `coverImage` — `DISCIPLINES_QUERY` returns it, so it should. If it does not, add it.
+
+- [ ] **Step 1: Add OG images to the project page**
+
+In `generateMetadata` in `app/work/[slug]/page.tsx`, add an `openGraph` block with the project's cover image at 1200×630 via `urlFor(...).width(1200).height(630).auto('format').url()`, plus `type: 'article'`. Guard on `project.coverImage?.asset` — omit `openGraph.images` entirely when absent rather than passing `undefined`.
+
+Mirror the homepage's existing comment about Next 16 merging metadata with `?? null`, so an explicit `undefined` overwrites rather than inherits.
+
+- [ ] **Step 2: Add OG images to the discipline page**
+
+Same treatment in `app/[discipline]/page.tsx`, using the discipline's `coverImage`.
+
+- [ ] **Step 3: Verify the tags are actually emitted**
+
+Run `npm run build`, then start the production server and check a real page:
+
+```bash
+npm run start &
+curl -s http://localhost:3000/work/northern-lights | grep -o 'og:image[^>]*'
+```
+
+Expected: an `og:image` meta tag pointing at `cdn.sanity.io`. Stop the server. Report what you saw — do not assume the tag is there because the code looks right.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add app/
+git commit -m "Give projects and disciplines their own share images"
+```
+
+---
+
+### Task 5: Performance and accessibility verification
+
+**Files:**
+- Create: `docs/verification-phase-6.md`
+
+This task measures rather than builds. Its deliverable is a document recording what was actually observed, with numbers.
+
+- [ ] **Step 1: Build and serve the production site**
+
+```bash
+rm -rf .next && npm run build && npm run start
+```
+
+Use the production build, never `npm run dev` — dev is unoptimised, and its `'use cache'` entries can serve pre-seed content (this bit the Phase 5 review).
+
+- [ ] **Step 2: Measure the performance budget**
+
+Run a Lighthouse audit against `/` and `/cinematographer` on a mobile profile. Record **LCP**, **CLS**, **TBT** and the overall performance score for each.
+
+Spec §7.4 requires **LCP < 2.5s** and **CLS < 0.1**. Note that a localhost run flatters LCP — record the number, and say plainly that it is a local measurement, not a 4G one.
+
+- [ ] **Step 3: Run an accessibility audit**
+
+Lighthouse's accessibility category on `/`, `/cinematographer`, `/work/northern-lights` and `/about`. Then check by hand what it cannot:
+
+- Tab through the homepage and the mobile menu. Does focus stay visible, and does the overlay menu trap focus while open?
+- Is there exactly one `<h1>` per page, with no skipped heading levels?
+- Do all images have meaningful `alt` text (and decorative ones empty `alt`)?
+- Does the reel hero respect `prefers-reduced-motion`? Toggle it and confirm the video does not play.
+- Are the contact links genuinely ≥44px?
+
+- [ ] **Step 4: Write it up**
+
+Create `docs/verification-phase-6.md` recording, per page: the Lighthouse scores, the three metrics, every accessibility issue found, and for each issue whether it was fixed in this phase or is outstanding. **Record failures honestly** — a budget that is missed is a finding, not something to bury or restate as a pass.
+
+- [ ] **Step 5: Fix what is both real and small**
+
+Fix any issue that is a genuine defect and contained. Anything larger, list in the document as outstanding with a note on what it would take. Do not start a redesign inside a verification task.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add docs/verification-phase-6.md
+git commit -m "Record the Phase 6 performance and accessibility verification"
+```
+
+---
+
+## Phase 6 done when
+
+- `npm test`, `npx tsc --noEmit`, `npm run lint` and `npm run build` are all clean
+- Media fades and rises into view, and does not move at all under `prefers-reduced-motion`
+- The site is fully readable with JavaScript disabled — no element is left invisible by a reveal that never fired
+- A photographer's landscape and portrait work sit in the same grid at their own shapes
+- `mobileCoverImage` is actually used, and a phone fetches only the mobile crop
+- Sharing a project link previews with that project's cover image
+- `docs/verification-phase-6.md` records real measured numbers, including any the site misses
+
+## What Phase 6 deliberately leaves out
+
+`previewLoop` hover previews, for the three reasons given in the spec-diff pass above — raise with the user rather than treating as done. Everything else in §11's phase 6 is built or verified here.
+
+---
+
+### Task 6 (added post-verification): Close the two LCP failures Task 5 found
+
+Task 5's Lighthouse runs missed the spec's LCP < 2.5s budget by 2-3x on both measured pages. Both root causes were independently confirmed in source by task review, not inferred from Lighthouse noise alone, and both are narrow enough to fix without a redesign.
+
+**Files:**
+- Modify: `components/home-hero.tsx`
+- Modify: `components/project-card.tsx`
+- Modify: `components/project-card.test.tsx`
+- Modify: `components/work-browser.tsx`
+
+**Root cause 1 — homepage hero has no poster in server HTML.** `HomeHero` loads `HeroReel` via `next/dynamic({ ssr: false })`, so nothing in that subtree exists until JavaScript hydrates and fetches the ~1MB player chunk — no `<img>`, nothing. The LCP element (the poster frame) is undiscoverable until then.
+
+Fix: render a real, `priority` `next/image` poster in `HomeHero` itself — which DOES server-render, since only the inner `HeroReel` import is `ssr: false` — stacked behind where `HeroReel` mounts. Once hydrated, `MuxPlayer`'s own `poster` prop paints the identical image, so there is no visible change; only the *first paint* moves from "nothing" to "the real poster, in the initial HTML."
+
+Currently `poster` comes only from `posterUrl(still)`, i.e. `settings.heroImages[0]` — a field that's hidden in Studio whenever `heroVariant !== 'still'`, so a client who only ever configured the reel treatment may have never set it, leaving `poster` undefined. Add a fallback to Mux's own public, unauthenticated thumbnail CDN — no extra fetch needed, it's pure string construction from the `playbackId` already in hand:
+
+```ts
+const muxPoster = playbackId
+  ? `https://image.mux.com/${playbackId}/thumbnail.jpg?width=2400&fit_mode=smartcrop`
+  : undefined
+const poster = posterUrl(still) ?? muxPoster
+```
+
+Then, inside the `showReel` branch, render the poster image ahead of `<HeroReel>`:
+
+```tsx
+{showReel && (
+  <div className="absolute inset-0 bg-hairline">
+    {poster && (
+      <Image
+        src={poster}
+        alt={name}
+        fill
+        priority
+        sizes="100vw"
+        placeholder={still?.lqip ? 'blur' : 'empty'}
+        blurDataURL={still?.lqip}
+        style={still ? { objectPosition: hotspotPosition(still) } : undefined}
+        className="object-cover"
+      />
+    )}
+    <HeroReel playbackId={playbackId} poster={poster} />
+  </div>
+)}
+```
+
+Note `still` may be undefined when the poster comes from the Mux fallback — guard `hotspotPosition`/`lqip` accordingly, exactly as written above. `next.config.ts` already lists `image.mux.com` in `remotePatterns`, and the custom Sanity image loader (`lib/sanity-image-loader.ts`) passes any non-`cdn.sanity.io` URL through unmodified, so this needs no config change.
+
+**Root cause 2 — the first above-the-fold project card is unconditionally lazy.** `CoverImage` already accepts a `priority` prop (defaults `false` → `loading="lazy"`), but `ProjectCard` never accepts or forwards one, so every card on every discipline page — including the first, which sits directly under the page heading with no hero above it — loads lazily.
+
+Fix: thread `priority` through.
+
+```ts
+// project-card.tsx — add to the props type and forward it
+priority?: boolean
+// ...
+<CoverImage
+  image={image}
+  mobileImage={project.mobileCoverImage}
+  alt={project.title}
+  sizes={sizes ?? layout.sizes}
+  priority={priority}
+  className="transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+/>
+```
+
+```tsx
+// work-browser.tsx — only the very first rendered card is above the fold
+<ProjectCard
+  key={project._id}
+  project={project}
+  index={index}
+  cadence={cadence}
+  priority={index === 0}
+/>
+```
+
+**Deliberately NOT touched: `featured-work.tsx`.** Its grid sits below the homepage hero (which occupies 70-85vh), so its first item is not the LCP candidate there, and Task 5 never measured or confirmed a problem on that page. Forcing `priority` on an off-screen image would spend LCP-priority bandwidth on the wrong element. Scope this fix to what was actually measured.
+
+- [ ] Write a failing test in `project-card.test.tsx` asserting that `priority={true}` produces `loading="eager"`/`fetchpriority="high"` on the rendered `<img>`, and that the default (`priority` omitted) still produces `loading="lazy"` — pin both directions so this can't silently regress either way.
+- [ ] Run it, watch it fail, implement, run again.
+- [ ] Manually verify in a real browser: reload `/` and confirm the poster paints immediately (view source / disable JS should still show an `<img>` for the hero); reload `/cinematographer` and confirm only the first card's image has `loading="eager"` in the DOM, the rest stay `lazy`.
+- [ ] `npm test`, `npx tsc --noEmit`, `npm run lint`, `rm -rf .next && npm run build` all clean.
+- [ ] Re-run the two Lighthouse checks from Task 5 (`/` and `/cinematographer`, mobile profile) and record the before/after LCP numbers in `docs/verification-phase-6.md` — update its "outstanding" section to reflect what's now fixed, or explain honestly if the numbers still miss budget and why.
+- [ ] Commit.
+
+---
+
+### Task 7 (added post-review): Fix the broken Mux poster URL Task 6 shipped
+
+Task 6's review found the homepage hero's Mux poster URL — `?width=2400&fit_mode=smartcrop` — returns HTTP 400 in production, because the source video is 1280px wide and `fit_mode=smartcrop` rejects a crop wider than the source. The `<img>` existed in server HTML (Task 6's actual, narrow claim) but never loaded (`naturalWidth: 0`), so the LCP element stayed the video, exactly as before. Verified independently: Mux accepts `width=2400` alone (no `fit_mode`) against the same 1280px source and returns 200 — it performs a plain proportional resize, not a crop, when no `fit_mode`/`height` pair is given.
+
+A second, related bug in the same code path: the custom `next/image` loader (`lib/sanity-image-loader.ts`) passes any non-`cdn.sanity.io` URL through **unmodified**, so every breakpoint in `next/image`'s generated `srcset` for the Mux poster resolves to the exact same hardcoded URL — a phone downloads the full desktop-sized file.
+
+**Files:**
+- Modify: `lib/sanity-image-loader.ts`
+- Modify: `lib/sanity-image-loader.test.ts`
+- Modify: `components/home-hero.tsx`
+
+**Fix 1 — the loader gets a second branch for Mux thumbnails**, giving them real per-breakpoint widths the same way Sanity images already get them, and never emitting `fit_mode` (which is what caused the 400):
+
+```ts
+if (url.hostname === 'image.mux.com') {
+  // Mux's thumbnail API takes `width` (not Sanity's `w`), and rejects
+  // fit_mode=smartcrop whenever the requested width exceeds the source
+  // video's own resolution (verified: a 1280px-wide source 400s on
+  // width=2400&fit_mode=smartcrop but accepts width=2400 alone, which
+  // performs a plain proportional resize instead of a crop).
+  url.searchParams.set('width', String(width))
+  url.searchParams.delete('fit_mode')
+  return url.toString()
+}
+```
+
+Add this alongside the existing `cdn.sanity.io` branch (same function, same file — `next/image` only accepts one `loaderFile`).
+
+**Fix 2 — `home-hero.tsx` stops requesting a fixed width in the base URL**, since the loader now injects the correct one per breakpoint:
+
+```ts
+const muxPoster = playbackId
+  ? `https://image.mux.com/${playbackId}/thumbnail.jpg`
+  : undefined
+```
+
+(No `?width=…` or `&fit_mode=…` — the loader adds `width` itself.)
+
+**Fix 3 — `alt={name}` on the poster `<Image>` should be `alt=""`.** It's a decorative background stand-in for the video (the visible name is the separate `<h1>` a few lines below), so a screen reader announcing it duplicates the heading.
+
+- [ ] Write failing tests in `lib/sanity-image-loader.test.ts` for the new branch: given an `image.mux.com` URL, the loader sets `width` to the requested value, and never emits `fit_mode` even if the input URL had one. Run, watch fail, implement, run again.
+- [ ] Update `home-hero.tsx` per Fix 2 and Fix 3.
+- [ ] `npm test`, `npx tsc --noEmit`, `npm run lint` all clean.
+- [ ] `rm -rf .next && npm run build && npm run start` (kill anything on port 3000 first). **Curl the actual constructed poster URL yourself and confirm HTTP 200** — quote the exact URL and status code in your report. This is the specific check Task 6 skipped; do not repeat that mistake.
+- [ ] Load `/` in a real browser (or headless) and confirm the poster image genuinely paints (non-zero `naturalWidth`), not just that an `<img>` tag exists in HTML.
+- [ ] Re-run the same Lighthouse check Task 5/6 used against `/` (mobile profile), record the new LCP, and update `docs/verification-phase-6.md` honestly. **Do not claim the 2.5s budget is met unless the number actually shows it.** If it's still over budget — plausible, since the ~1MB player chunk and the poster's own weight may still dominate — say so plainly with the real number and leave it as a known, explained gap rather than another excuse. This task's bar is "the poster is real and correctly sized," not "the budget is met."
+- [ ] Commit.
+
+---
+
+### Task 8 (added post-whole-branch-review): Close the whole-branch review's four findings
+
+The whole-branch final review (which looks at everything together, catching what task-by-task review structurally can't) found two real bugs still on the LCP-critical path, and two real test-coverage gaps — including one in exactly the file that shipped Task 6's original broken-URL bug, which no test currently guards against recurring.
+
+**Files:**
+- Modify: `components/home-hero.tsx`
+- Modify: `components/home-hero.test.tsx`
+- Modify: `lib/sanity-image-loader.ts`
+- Modify: `lib/sanity-image-loader.test.ts`
+- Modify: `components/site-header.test.tsx`
+- Modify: `app/[discipline]/page.tsx`
+
+**Finding 1 — the hero poster downloads twice.** `<HeroReel playbackId={playbackId} poster={poster} />` (home-hero.tsx:80) passes the bare, loader-unaware `poster` string straight through to `MuxPlayer`, which renders its own `<img>` in shadow DOM from that literal URL — a second, separate fetch from the `priority` `<Image>` rendered just above it, which the loader resizes per breakpoint. Confirmed live: two distinct 200s for the same frame.
+
+Before writing the fix, determine empirically (not by guessing) which of these is true, since it changes the fix:
+- Does `MuxPlayer` rendered with NO `poster` prop show a black/blank flash before the video buffers, or does our own `<Image>` — already painted in the same absolute-fill position — simply show through underneath it?
+
+Test this in a real browser against the production build. If our own Image shows through cleanly with no `poster` prop on `HeroReel`, the fix is simply to stop passing `poster` to `HeroReel` at all — delete the prop, since it is now fully redundant with the `<Image>` already rendered beside it. If removing it causes a visible gap, instead construct one single, width-capped poster URL string (see Finding 2's clamp) and pass that identical string to both places, so the two requests can at least be served from one HTTP cache entry. Document in a code comment which you found and why.
+
+**Finding 2 — the loader lets the Mux poster be upscaled absurdly.** The source video frame is 1280×720; on a high-DPR viewport requesting `sizes="100vw"`, `next/image`'s largest candidate asks for `width=3840` — Mux honours it, returning a genuine 3840×2160, ~760KB upscale of a 720p source. Clamp it in the loader's `image.mux.com` branch:
+
+```ts
+if (url.hostname === 'image.mux.com') {
+  // Mux's thumbnail API takes `width` (not Sanity's `w`), and rejects
+  // fit_mode=smartcrop whenever the requested width exceeds the source
+  // video's own resolution — fit_mode is dropped unconditionally rather
+  // than worked around. Clamped to 1920: this poster is a full-bleed
+  // background behind a video player, never a print-quality asset, and an
+  // unclamped request can ask Mux to upscale a source video far past its
+  // own resolution for no visible gain (a 1280x720 source was seen
+  // upscaled to a 3840x2160, ~760KB request on a high-DPR full-width view).
+  url.searchParams.set('width', String(Math.min(width, 1920)))
+  url.searchParams.delete('fit_mode')
+  return url.toString()
+}
+```
+
+- [ ] Add a test in `lib/sanity-image-loader.test.ts`: requesting `width: 3840` against an `image.mux.com` URL produces `width=1920` in the output, not `3840`. Watch it fail against the current unclamped code, then implement.
+
+**Finding 3 — `home-hero.tsx` has no test for anything Task 6/7 touched.** This is the exact file that shipped a URL with `fit_mode=smartcrop`, which 400'd in production, undetected by any test because none existed. Add to `home-hero.test.tsx`:
+- [ ] A test asserting that whatever poster URL `HomeHero` constructs for the reel treatment never contains `fit_mode` in its query string (this is the literal regression that shipped once already — pin it directly so it cannot recur silently).
+- [ ] A test asserting a poster image actually renders in the reel branch when a `playbackId` is present but `heroImages` is empty (the Mux-thumbnail-fallback path this whole chain of fixes was for) — use the existing render + `screen` conventions already in this file.
+
+**Finding 4 — the mobile-menu focus trap (built in Task 5) has no automated test**, verified only by a one-off manual script. Add to `components/site-header.test.tsx`, using `@testing-library/user-event` (already a project dependency, used in `work-browser.test.tsx` and `category-filter-bar.test.tsx` — follow their conventions):
+- [ ] Opening the menu moves focus to the first link (not the trigger button itself).
+- [ ] Tabbing from the last focusable element cycles back to the first (the menu button), not out of the menu.
+- [ ] Shift+Tab from the first focusable element cycles to the last.
+- [ ] Escape closes the menu and returns focus to the trigger button.
+
+**Also, trivial and unambiguous — fix inline, no test needed:** `app/[discipline]/page.tsx`'s `openGraph.type` is `'article'`. A discipline page is a listing/index page, not a single article — change to `'website'`.
+
+**Explicitly not fixed, logged as accepted:** the focus trap's keydown listener stays armed if the menu opens on mobile and the viewport is then resized past the `md` breakpoint without closing it, where the nav becomes `display:none` — focus would cycle through invisible links. Real-world frequency is low (requires opening the menu then resizing past a breakpoint without closing it) and a correct fix needs a `matchMedia` listener alongside the existing effect, which is a second, different kind of complexity from what Task 5 built. Worth a future task if it turns out to matter in practice; not blocking here.
+
+- [ ] `npm test`, `npx tsc --noEmit`, `npm run lint` all clean.
+- [ ] `rm -rf .next && npm run build && npm run start` (kill port 3000 first). Confirm in the browser's network panel (or by curling the two poster-related URLs directly) that the hero poster now fires exactly ONE request for the poster image, not two.
+- [ ] Commit.
+
+This closes Phase 6. After this task, the branch is ready for a final scoped re-review of just this diff (not another whole-branch pass), then `finishing-a-development-branch`.

@@ -162,6 +162,23 @@ body {
   color: var(--ink-muted);
 }
 
+/* Spec 5.3: media fades and rises 8px as it enters the viewport. Driven by
+   a data attribute so the JS only toggles state and CSS owns the motion.
+   The reduced-motion block below already flattens the duration, and
+   components/reveal.tsx additionally never hides anything in that case. */
+.reveal {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 700ms ease-out,
+    transform 700ms ease-out;
+}
+
+.reveal[data-revealed='false'] {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

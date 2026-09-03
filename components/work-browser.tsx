@@ -63,6 +63,7 @@ export function WorkBrowser({
               project={project}
               index={index}
               cadence={cadence}
+              priority={index === 0}
             />
           ))}
         </div>
