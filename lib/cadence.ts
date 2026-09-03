@@ -7,6 +7,11 @@ export type CadenceLayout = {
    *  cadence has no fixed shape — the card then takes its aspect ratio
    *  from the image itself. */
   aspect?: string
+  /** The numeric twin of `aspect`, and it must always agree with it (there's
+   *  a test). A card that art-directs a mobile crop has to switch its shape
+   *  inside a media query, which needs the ratio as a value rather than as a
+   *  utility class. */
+  ratio?: number
   /** The `sizes` attribute for next/image, matching the grid's columns. */
   sizes: string
 }
@@ -20,11 +25,13 @@ const LAYOUTS: Record<Cadence, CadenceLayout> = {
   cinematic: {
     grid: 'grid grid-cols-1 gap-x-8 gap-y-20 md:grid-cols-2',
     aspect: 'aspect-video',
+    ratio: 16 / 9,
     sizes: '(min-width: 768px) 50vw, 100vw',
   },
   filmstrip: {
     grid: 'grid grid-cols-1 gap-x-3 gap-y-10 sm:grid-cols-2 lg:grid-cols-3',
     aspect: 'aspect-[3/2]',
+    ratio: 3 / 2,
     sizes: '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw',
   },
   editorial: {

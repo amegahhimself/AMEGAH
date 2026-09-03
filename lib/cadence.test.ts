@@ -32,6 +32,28 @@ describe('cadenceLayout', () => {
   })
 })
 
+describe('cadence aspect ratios', () => {
+  // `ratio` is what an art-directed card switches back to above the mobile
+  // breakpoint, where `aspect` (a utility class) can't be used. If the two
+  // ever disagree, a card would change shape the moment a mobile crop is
+  // uploaded — so they're pinned together here.
+  const CLASS_FOR_RATIO: Record<string, number> = {
+    'aspect-video': 16 / 9,
+    'aspect-[3/2]': 3 / 2,
+  }
+
+  it('keeps the numeric ratio in step with the utility class', () => {
+    for (const cadence of ['cinematic', 'filmstrip', 'editorial'] as const) {
+      const { aspect, ratio } = cadenceLayout(cadence)
+      if (!aspect) {
+        expect(ratio).toBeUndefined()
+        continue
+      }
+      expect(ratio).toBe(CLASS_FOR_RATIO[aspect])
+    }
+  })
+})
+
 describe('editorial cadence', () => {
   it('pins no aspect ratio, so cards take the shape of the photograph', () => {
     expect(cadenceLayout('editorial').aspect).toBeUndefined()

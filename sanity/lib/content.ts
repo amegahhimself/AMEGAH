@@ -145,6 +145,7 @@ export type ProjectDetail = {
   year?: number
   description?: PortableTextValue
   coverImage?: SanityImage
+  mobileCoverImage?: SanityImage
   muxVideo?: MuxVideo | null
   gallery?: GalleryImage[]
   // A dangling reference (the client deleted the discipline a project still

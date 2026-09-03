@@ -91,6 +91,7 @@ export const PROJECT_DETAIL_QUERY = `*[_type == "project" && slug.current == $sl
   year,
   description,
   "coverImage": coverImage${IMAGE_PROJECTION},
+  "mobileCoverImage": mobileCoverImage${IMAGE_PROJECTION},
   "muxVideo": muxVideo.asset->{playbackId, assetId},
   "gallery": gallery[]{
     ${IMAGE_FIELDS},

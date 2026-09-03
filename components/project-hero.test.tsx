@@ -45,3 +45,36 @@ describe('ProjectHero', () => {
     expect(container.querySelector('img')).toBeNull()
   })
 })
+
+// A 16:9 hero is the worst possible box for a portrait photograph, so the
+// hero art-directs too — not just the cards.
+describe('ProjectHero mobile art direction', () => {
+  const withMobile: ProjectDetail = {
+    ...base,
+    mobileCoverImage: { asset: { _ref: 'image-def-1080x1350-jpg' }, aspectRatio: 0.8 },
+  }
+
+  it('offers the client’s crop to phones', () => {
+    const { container } = render(<ProjectHero project={withMobile} />)
+    expect(container.querySelector('source')).toHaveAttribute(
+      'media',
+      '(max-width: 767px)',
+    )
+  })
+
+  it('takes the crop’s shape below the breakpoint and 16:9 above', () => {
+    const { container } = render(<ProjectHero project={withMobile} />)
+    const frame = container.firstElementChild as HTMLElement
+    expect(frame.className).toContain('cover-frame')
+    expect(frame.className).not.toContain('aspect-video')
+    expect(frame.getAttribute('style')).toContain(`--cover-ratio: ${16 / 9}`)
+    expect(frame.getAttribute('style')).toContain('--cover-mobile-ratio: 0.8')
+  })
+
+  it('stays a plain 16:9 hero when the client uploaded no crop', () => {
+    const { container } = render(<ProjectHero project={base} />)
+    const frame = container.firstElementChild as HTMLElement
+    expect(frame.className).toContain('aspect-video')
+    expect(frame.className).not.toContain('cover-frame')
+  })
+})

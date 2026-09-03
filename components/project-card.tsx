@@ -2,8 +2,13 @@ import Link from 'next/link'
 
 import { cadenceLayout } from '@/lib/cadence'
 import { indexLabel } from '@/lib/card-meta'
+import { cn } from '@/lib/utils'
 import type { Cadence, ProjectCardData } from '@/sanity/lib/content'
-import { CoverImage } from './cover-image'
+import { CoverImage, coverFrameProps } from './cover-image'
+
+/** The shape an editorial card falls back to when the photograph's own
+ *  metadata carries no aspect ratio — the numeric twin of `aspect-[4/5]`. */
+const EDITORIAL_FALLBACK_RATIO = 4 / 5
 
 export function ProjectCard({
   project,
@@ -27,11 +32,25 @@ export function ProjectCard({
   // aspect-[4/5] so the card can never collapse to zero height.
   const ratio = layout.aspect ? undefined : image?.aspectRatio
 
+  // With a mobile crop the frame has to change shape at the breakpoint, not
+  // just change file — otherwise the client's portrait crop is object-cover'd
+  // back into a landscape box and most of what they framed is thrown away.
+  // These props own the ratio at BOTH widths, so the cadence class and the
+  // inline ratio below step aside (an inline ratio would outrank the media
+  // query anyway).
+  const frame = coverFrameProps({
+    mobileImage: project.mobileCoverImage,
+    desktopRatio: layout.ratio ?? image?.aspectRatio ?? EDITORIAL_FALLBACK_RATIO,
+  })
+
   return (
     <Link href={`/work/${project.slug}`} className="group block">
       <div
-        className={`relative overflow-hidden bg-hairline ${layout.aspect ?? (ratio ? '' : 'aspect-[4/5]')}`}
-        style={ratio ? { aspectRatio: String(ratio) } : undefined}
+        className={cn(
+          'relative overflow-hidden bg-hairline',
+          frame?.className ?? layout.aspect ?? (ratio ? '' : 'aspect-[4/5]'),
+        )}
+        style={frame?.style ?? (ratio ? { aspectRatio: String(ratio) } : undefined)}
       >
         <CoverImage
           image={image}

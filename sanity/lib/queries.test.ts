@@ -85,6 +85,22 @@ describe('PROJECT_CARD_PROJECTION', () => {
   it('includes the image hotspot so crops respect the focal point', () => {
     expect(PROJECT_CARD_PROJECTION).toContain('hotspot')
   })
+
+  // A component reading a field the query never projects fails silently — it
+  // just renders as if the client uploaded nothing. This has bitten this
+  // project repeatedly, so the projection is pinned rather than trusted.
+  it('projects the mobile crop the card art-directs with', () => {
+    expect(PROJECT_CARD_PROJECTION).toContain('"mobileCoverImage": mobileCoverImage')
+  })
+
+  it('gives the mobile crop the same metadata as the wide one', () => {
+    // Its own ratio sizes the frame, its own hotspot positions it, and its
+    // own LQIP blurs it — the wide image's values are all wrong for it.
+    const mobile = PROJECT_CARD_PROJECTION.split('"mobileCoverImage"')[1]?.split('}')[0] ?? ''
+    expect(mobile).toContain('hotspot')
+    expect(mobile).toContain('lqip')
+    expect(mobile).toContain('aspectRatio')
+  })
 })
 
 describe('PROJECT_DETAIL_QUERY', () => {
@@ -109,6 +125,19 @@ describe('PROJECT_DETAIL_QUERY', () => {
   it('resolves the credits the page shows', () => {
     expect(PROJECT_DETAIL_QUERY).toContain('client->')
     expect(PROJECT_DETAIL_QUERY).toContain('partners[]->')
+  })
+
+  // The hero read `mobileCoverImage` while this query didn't project it —
+  // the field silently arrived undefined and the phone got the wide crop.
+  it('projects the mobile crop the hero art-directs with', () => {
+    expect(PROJECT_DETAIL_QUERY).toContain('"mobileCoverImage": mobileCoverImage')
+  })
+
+  it('gives the mobile crop the same metadata as the wide one', () => {
+    const mobile = PROJECT_DETAIL_QUERY.split('"mobileCoverImage"')[1]?.split('}')[0] ?? ''
+    expect(mobile).toContain('hotspot')
+    expect(mobile).toContain('lqip')
+    expect(mobile).toContain('aspectRatio')
   })
 })
 
