@@ -13,16 +13,11 @@ export function Practices({ disciplines }: { disciplines: Discipline[] }) {
     <section className="border-t border-hairline px-6 py-24 md:py-32">
       <div className="mb-6 flex items-center gap-3">
         <span className="h-px w-6 bg-accent" aria-hidden="true" />
-        <span className="index-meta text-accent!">Showreels</span>
+        <span className="index-meta">Showreels</span>
       </div>
 
-      <h2 aria-label="The Work In Motion" className="mb-14 leading-[0.9]">
-        <span className="font-condensed block text-5xl uppercase text-ink md:text-7xl">
-          The Work
-        </span>
-        <span className="text-outline mt-1 block font-display text-5xl italic md:text-7xl">
-          In Motion
-        </span>
+      <h2 className="mb-14 text-4xl font-bold uppercase leading-[0.9] text-ink md:text-6xl">
+        The Work In Motion
       </h2>
       <div className="grid grid-cols-1 gap-x-6 gap-y-12 md:grid-cols-3">
         {disciplines.map((discipline) => {
@@ -51,7 +46,7 @@ export function Practices({ disciplines }: { disciplines: Discipline[] }) {
                     />
                   )}
                 </div>
-                <h3 className="font-display mt-4 text-2xl text-ink">{discipline.title}</h3>
+                <h3 className="mt-4 text-2xl font-semibold text-ink">{discipline.title}</h3>
                 {discipline.description && (
                   <p className="mt-2 max-w-[var(--measure)] text-ink-soft">{discipline.description}</p>
                 )}

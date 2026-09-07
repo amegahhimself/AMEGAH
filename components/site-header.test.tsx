@@ -26,6 +26,7 @@ describe('SiteHeader', () => {
     render(<SiteHeader disciplines={disciplines} settings={null} />)
     expect(screen.getByRole('link', { name: 'About' })).toHaveAttribute('href', '/#about')
     expect(screen.getByRole('link', { name: 'Clients' })).toHaveAttribute('href', '/#clients')
+    expect(screen.getByRole('link', { name: 'Partners' })).toHaveAttribute('href', '/#partners')
   })
 
   it('has no standalone Contact link — Hire {name} already points at #contact', () => {
@@ -83,7 +84,7 @@ describe('SiteHeader', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Menu' }))
       const dialog = screen.getByRole('dialog', { name: 'Menu' })
 
-      const lastLink = within(dialog).getByRole('link', { name: 'Clients' })
+      const lastLink = within(dialog).getByRole('link', { name: 'Partners' })
       lastLink.focus()
       expect(lastLink).toHaveFocus()
 
@@ -101,7 +102,7 @@ describe('SiteHeader', () => {
       expect(menuButton).toHaveFocus()
 
       await userEvent.tab({ shift: true })
-      expect(within(dialog).getByRole('link', { name: 'Clients' })).toHaveFocus()
+      expect(within(dialog).getByRole('link', { name: 'Partners' })).toHaveFocus()
     })
 
     it('closes on Escape and returns focus to the trigger button', async () => {

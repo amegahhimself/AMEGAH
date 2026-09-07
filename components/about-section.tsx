@@ -30,15 +30,13 @@ export function AboutSection({ settings }: { settings: SiteSettings | null }) {
     <section id="about" className="px-6 py-24 md:py-32">
       <div className="mb-6 flex items-center gap-3">
         <span className="h-px w-6 bg-accent" aria-hidden="true" />
-        <span className="index-meta text-accent!">The Filmmaker</span>
+        <span className="index-meta">The Filmmaker</span>
       </div>
 
       <h2 aria-label={`About ${name}`} className="mb-14 leading-[0.9]">
-        <span className="font-condensed block text-5xl uppercase text-ink md:text-7xl">
-          {name}
-        </span>
+        <span className="block text-4xl font-bold uppercase text-ink md:text-6xl">{name}</span>
         {accent && (
-          <span className="text-outline mt-1 block font-display text-5xl italic md:text-7xl">
+          <span className="mt-1 block text-4xl font-medium uppercase text-ink-soft md:text-6xl">
             {accent}
           </span>
         )}
@@ -62,7 +60,7 @@ export function AboutSection({ settings }: { settings: SiteSettings | null }) {
 
         <div className="flex flex-1 flex-col justify-center gap-8">
           {hasProse(bio) ? (
-            <Prose value={bio} serif />
+            <Prose value={bio} />
           ) : (
             <p className="text-ink-muted">Biography coming soon.</p>
           )}

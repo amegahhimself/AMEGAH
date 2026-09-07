@@ -20,16 +20,11 @@ export function ContactSection({ settings }: { settings: SiteSettings | null }) 
     <footer id="contact" className="border-t border-hairline px-6 py-24 md:py-32">
       <div className="mb-6 flex items-center gap-3">
         <span className="h-px w-6 bg-accent" aria-hidden="true" />
-        <span className="index-meta !text-accent">Let&rsquo;s Collaborate</span>
+        <span className="index-meta">Let&rsquo;s Collaborate</span>
       </div>
 
-      <h2 aria-label="Let's Make Something" className="mb-8 leading-[0.9]">
-        <span className="font-condensed block text-5xl uppercase text-ink md:text-7xl">
-          Let&rsquo;s Make
-        </span>
-        <span className="text-outline mt-1 block font-display text-5xl italic md:text-7xl">
-          Something
-        </span>
+      <h2 className="mb-8 text-4xl font-bold uppercase leading-[0.9] text-ink md:text-6xl">
+        Let&rsquo;s Make Something
       </h2>
 
       {settings?.role && (
@@ -44,13 +39,13 @@ export function ContactSection({ settings }: { settings: SiteSettings | null }) 
         <div className="mt-16 flex max-w-md flex-col">
           {settings?.phone && (
             <div className="border-t border-hairline py-6">
-              <p className="index-meta mb-2 !text-accent">Phone</p>
+              <p className="index-meta mb-2">Phone</p>
               {/* inline-flex, not inline: min-height is inert on a plain
                   inline element, so this would not actually meet the 44px
                   touch target without it. */}
               <a
                 href={`tel:${settings.phone}`}
-                className="font-heading inline-flex min-h-11 items-center text-lg text-ink hover:text-ink-soft"
+                className="inline-flex min-h-11 items-center text-lg font-semibold text-ink hover:text-ink-soft"
               >
                 {settings.phone}
               </a>
@@ -59,10 +54,10 @@ export function ContactSection({ settings }: { settings: SiteSettings | null }) 
 
           {settings?.email && (
             <div className="border-t border-hairline py-6">
-              <p className="index-meta mb-2 !text-accent">Email</p>
+              <p className="index-meta mb-2">Email</p>
               <a
                 href={`mailto:${settings.email}`}
-                className="font-heading inline-flex min-h-11 items-center text-lg text-ink hover:text-ink-soft"
+                className="inline-flex min-h-11 items-center text-lg font-semibold text-ink hover:text-ink-soft"
               >
                 {settings.email}
               </a>
@@ -71,12 +66,12 @@ export function ContactSection({ settings }: { settings: SiteSettings | null }) 
 
           {settings?.instagramUrl && (
             <div className="border-t border-b border-hairline py-6">
-              <p className="index-meta mb-2 !text-accent">Instagram</p>
+              <p className="index-meta mb-2">Instagram</p>
               <a
                 href={settings.instagramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-heading inline-flex min-h-11 items-center text-lg text-ink hover:text-ink-soft"
+                className="inline-flex min-h-11 items-center text-lg font-semibold text-ink hover:text-ink-soft"
               >
                 {settings.instagramUrl.replace(/^https?:\/\/(www\.)?/, '')}
               </a>

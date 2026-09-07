@@ -1,5 +1,7 @@
 'use client'
 
+import { Menu as MenuIcon, X as XIcon } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 
@@ -16,6 +18,7 @@ type NavDiscipline = { title: string; slug: string }
 const STANDING_LINKS = [
   { title: 'About', href: '/#about' },
   { title: 'Clients', href: '/#clients' },
+  { title: 'Partners', href: '/#partners' },
 ]
 
 // Matches HomeHero's own fallback, so the header and hero never disagree
@@ -78,6 +81,17 @@ export function SiteHeader({
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [open])
 
+  // The overlay is always mounted (never conditionally rendered) so its
+  // opacity transition can actually play on close, not just on open — a
+  // conditionally-rendered element vanishes on the same tick `open` flips,
+  // there's no time left for a CSS transition to run. `inert` (not just
+  // aria-hidden) is what stops a keyboard user tabbing into off-screen
+  // links while it's faded out — aria-hidden alone hides it from screen
+  // readers but doesn't remove it from the tab order.
+  useEffect(() => {
+    if (navRef.current) navRef.current.inert = !open
+  }, [open])
+
   function close() {
     setOpen(false)
     menuButtonRef.current?.focus()
@@ -86,13 +100,30 @@ export function SiteHeader({
   return (
     <>
       <header className="sticky top-0 z-50 border-b border-hairline bg-ground/80 backdrop-blur">
-        <div className="flex items-center justify-between px-6 py-4">
+        <div className="flex items-start justify-between gap-4 px-6 py-4 md:items-center">
           <Link href="/" className="leading-none">
-            <span className="font-condensed block text-xl uppercase tracking-tight text-ink">
-              {name}
-            </span>
+            {/* The client's full logo also has a jagged distressed
+                wordmark that was illegible and visually clashing at header
+                size (confirmed in review). This icon is the gorilla mark
+                only, trimmed from a cleaner transparent source the client
+                sent separately (public/logo-full.png) — paired with our
+                own typeset name so the client's mark is on the page
+                without it fighting the rest of the site. */}
+            <div className="flex items-center gap-2">
+              <Image
+                src="/logo-icon.png"
+                alt=""
+                width={116}
+                height={138}
+                className="h-8 w-auto"
+                priority
+              />
+              <span className="block text-xl font-bold uppercase tracking-tight text-ink">
+                {name}
+              </span>
+            </div>
             {settings?.role && (
-              <span className="index-meta mt-0.5 block !text-accent">{settings.role}</span>
+              <span className="index-meta mt-0.5 block">{settings.role}</span>
             )}
           </Link>
 
@@ -122,31 +153,36 @@ export function SiteHeader({
             onClick={() => setOpen((value) => !value)}
             className="index-meta inline-flex min-h-11 min-w-11 items-center justify-center border border-hairline px-3 transition-colors hover:border-ink-soft md:hidden"
           >
-            {open ? 'Close' : 'Menu'}
+            {open ? (
+              <XIcon className="size-5" aria-hidden="true" />
+            ) : (
+              <MenuIcon className="size-5" aria-hidden="true" />
+            )}
           </button>
         </div>
       </header>
 
-      {open && (
-        <nav
-          ref={navRef}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Menu"
-          className="fixed inset-0 z-40 flex flex-col gap-6 overflow-y-auto bg-ground px-6 pb-10 pt-24 md:hidden"
-        >
-          {links.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={close}
-              className="font-display text-3xl text-ink"
-            >
-              {link.title}
-            </Link>
-          ))}
-        </nav>
-      )}
+      <nav
+        ref={navRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menu"
+        aria-hidden={!open}
+        className={`fixed inset-0 z-40 flex flex-col gap-6 overflow-y-auto bg-ground/90 px-6 pb-10 pt-24 backdrop-blur-md transition-opacity duration-300 md:hidden ${
+          open ? 'opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+      >
+        {links.map((link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+            onClick={close}
+            className="text-3xl font-bold text-ink"
+          >
+            {link.title}
+          </Link>
+        ))}
+      </nav>
     </>
   )
 }

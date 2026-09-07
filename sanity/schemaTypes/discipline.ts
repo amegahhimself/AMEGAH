@@ -18,7 +18,7 @@ export const discipline = defineType({
       name: 'slug',
       title: 'Slug',
       type: 'slug',
-      description: 'Used in the page address, e.g. /cinematographer',
+      description: 'Used in the page address, e.g. /cinematography',
       options: { source: 'title', maxLength: 96 },
       validation: (Rule) => Rule.required(),
     }),

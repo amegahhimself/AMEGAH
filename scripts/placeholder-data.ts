@@ -80,7 +80,7 @@ export const placeholderProjects: PlaceholderProject[] = [
   {
     slug: 'salt-and-water',
     title: 'Salt and Water',
-    discipline: 'cinematographer',
+    discipline: 'cinematography',
     category: 'documentaries',
     year: 2025,
     featured: true,
@@ -97,7 +97,7 @@ export const placeholderProjects: PlaceholderProject[] = [
   {
     slug: 'midnight-run',
     title: 'Midnight Run',
-    discipline: 'cinematographer',
+    discipline: 'cinematography',
     category: 'music-videos',
     year: 2024,
     pexelsId: 1707823,
@@ -110,7 +110,7 @@ export const placeholderProjects: PlaceholderProject[] = [
   {
     slug: 'accra-after-dark',
     title: 'Accra After Dark',
-    discipline: 'cinematographer',
+    discipline: 'cinematography',
     category: 'short-films',
     year: 2023,
     pexelsId: 2387877,
@@ -122,7 +122,7 @@ export const placeholderProjects: PlaceholderProject[] = [
   {
     slug: 'adjei-mensah',
     title: 'Adjei & Mensah',
-    discipline: 'cinematographer',
+    discipline: 'events',
     category: 'white-wedding',
     year: 2025,
     pexelsId: 3059720,
@@ -134,7 +134,7 @@ export const placeholderProjects: PlaceholderProject[] = [
   {
     slug: 'studio-portraits',
     title: 'Studio Portraits',
-    discipline: 'photographer',
+    discipline: 'photography',
     category: 'portraits',
     year: 2025,
     featured: true,
@@ -147,7 +147,7 @@ export const placeholderProjects: PlaceholderProject[] = [
   {
     slug: 'market-day',
     title: 'Market Day',
-    discipline: 'photographer',
+    discipline: 'photography',
     category: 'lifestyle',
     year: 2024,
     pexelsId: 2896853,
@@ -159,7 +159,7 @@ export const placeholderProjects: PlaceholderProject[] = [
   {
     slug: 'fabric',
     title: 'Fabric',
-    discipline: 'photographer',
+    discipline: 'photography',
     category: 'editorial',
     year: 2023,
     pexelsId: 3785424,
@@ -185,14 +185,19 @@ export const placeholderDisciplines = [
     description: 'Music videos, commercials and short films.',
   },
   {
-    slug: 'cinematographer',
+    slug: 'cinematography',
     pexelsId: 2117937,
     description: 'Camera and lighting for narrative, documentary and events.',
   },
   {
-    slug: 'photographer',
+    slug: 'photography',
     pexelsId: 2896853,
     description: 'Portraiture, lifestyle and editorial commissions.',
+  },
+  {
+    slug: 'events',
+    pexelsId: 3059720,
+    description: 'Weddings, parties, funerals and corporate occasions.',
   },
 ]
 

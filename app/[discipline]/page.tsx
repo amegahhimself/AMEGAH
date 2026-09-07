@@ -92,16 +92,11 @@ async function DisciplineHeader({
       <header className="mb-12">
         <div className="mb-6 flex items-center gap-3">
           <span className="h-px w-6 bg-accent" aria-hidden="true" />
-          <span className="index-meta !text-accent">Portfolio</span>
+          <span className="index-meta">Portfolio</span>
         </div>
 
-        <h1 aria-label={`${discipline.title} Work`} className="mb-6 leading-[0.9]">
-          <span className="font-condensed block text-5xl uppercase text-ink md:text-7xl">
-            {discipline.title}
-          </span>
-          <span className="text-outline mt-1 block font-display text-5xl italic md:text-7xl">
-            Work
-          </span>
+        <h1 className="mb-6 text-4xl font-bold uppercase leading-[0.9] text-ink md:text-6xl">
+          {discipline.title} Work
         </h1>
 
         {discipline.description && (
