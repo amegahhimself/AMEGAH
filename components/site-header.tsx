@@ -103,12 +103,17 @@ export function SiteHeader({
     menuButtonRef.current?.focus()
   }
 
+  // The mobile hamburger/overlay nav is used through Tailwind's `lg` (1024px)
+  // breakpoint rather than the more common `md` (768px) — the inline desktop
+  // nav (all links + the Hire button in one row) was too cramped on tablet
+  // widths, per the client's own review, so tablets get the same overlay
+  // treatment as phones.
   return (
     <>
       <header
-        className={`sticky top-0 z-50 border-b border-hairline bg-ground/80 backdrop-blur ${open ? 'max-md:hidden' : ''}`}
+        className={`sticky top-0 z-50 border-b border-hairline bg-ground/80 backdrop-blur ${open ? 'max-lg:hidden' : ''}`}
       >
-        <div className="flex items-start justify-between gap-4 px-6 py-4 md:items-center">
+        <div className="flex items-start justify-between gap-4 px-6 py-4 lg:items-center">
           <Link href="/" className="leading-none">
             {/* The client's full logo also has a jagged distressed
                 wordmark that was illegible and visually clashing at header
@@ -135,7 +140,7 @@ export function SiteHeader({
             )}
           </Link>
 
-          <nav className="hidden items-center gap-8 md:flex">
+          <nav className="hidden items-center gap-8 lg:flex">
             {links.map((link) => (
               <Link
                 key={link.href}
@@ -159,7 +164,7 @@ export function SiteHeader({
             aria-label="Menu"
             aria-expanded={open}
             onClick={() => setOpen(true)}
-            className="index-meta inline-flex min-h-11 min-w-11 items-center justify-center border border-hairline px-3 transition-colors hover:border-ink-soft md:hidden"
+            className="index-meta inline-flex min-h-11 min-w-11 items-center justify-center border border-hairline px-3 transition-colors hover:border-ink-soft lg:hidden"
           >
             <MenuIcon className="size-5" aria-hidden="true" />
           </button>
@@ -172,7 +177,7 @@ export function SiteHeader({
         aria-modal="true"
         aria-label="Menu"
         aria-hidden={!open}
-        className={`fixed inset-0 z-40 flex flex-col gap-6 overflow-y-auto bg-ground/90 px-6 pb-10 pt-6 backdrop-blur-md transition-opacity duration-300 md:hidden ${
+        className={`fixed inset-0 z-40 flex flex-col gap-6 overflow-y-auto bg-ground/90 px-6 pb-10 pt-6 backdrop-blur-md transition-opacity duration-300 lg:hidden ${
           open ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
       >
