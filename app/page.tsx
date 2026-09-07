@@ -1,9 +1,10 @@
 import { Suspense } from 'react'
 
 import { AboutSection } from '@/components/about-section'
+import { ClientsSection } from '@/components/clients-section'
 import { FeaturedWork } from '@/components/featured-work'
 import { HomeHero } from '@/components/home-hero'
-import { LogoStrip } from '@/components/logo-strip'
+import { PartnersSection } from '@/components/partners-section'
 import { Practices } from '@/components/practices'
 import {
   getClients,
@@ -66,7 +67,8 @@ async function HomeView() {
       <Practices disciplines={disciplines} />
       <FeaturedWork projects={featured} />
       <AboutSection settings={settings} />
-      <LogoStrip clients={clients} partners={partners} />
+      <ClientsSection clients={clients} />
+      <PartnersSection partners={partners} />
     </>
   )
 }

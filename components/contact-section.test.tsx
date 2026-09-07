@@ -20,7 +20,7 @@ describe('ContactSection', () => {
 
   it('titles the section', () => {
     render(<ContactSection settings={settings} />)
-    expect(screen.getByRole('heading', { name: "Let's Make Something" })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Let’s Make Something' })).toBeInTheDocument()
   })
 
   it('offers real, working links for every channel the client has set', () => {

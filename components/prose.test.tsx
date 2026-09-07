@@ -73,15 +73,6 @@ describe('Prose', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it('sets the prose in the body face by default', () => {
-    const { container } = render(<Prose value={paragraph} />)
-    expect(container.firstElementChild?.className).not.toContain('font-display')
-  })
-
-  it('sets the prose in the display face when asked, for the About bio', () => {
-    const { container } = render(<Prose value={paragraph} serif />)
-    expect(container.firstElementChild?.className).toContain('font-display')
-  })
 })
 
 // The client can type into a field and then clear it. Studio stores that as an

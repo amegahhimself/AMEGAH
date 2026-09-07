@@ -81,7 +81,7 @@ async function ProjectView({ params }: Pick<PageProps<'/work/[slug]'>, 'params'>
       <div className="px-6 py-16 md:py-24">
         <p className="index-meta">{creditLine(project)}</p>
         <h1
-          className="font-display mt-3 text-ink"
+          className="mt-3 font-bold text-ink"
           style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', lineHeight: 1.05 }}
         >
           {project.title}

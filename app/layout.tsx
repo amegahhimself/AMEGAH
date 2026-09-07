@@ -1,46 +1,25 @@
 import type { Metadata } from "next";
-import { Anton, Archivo_Black, Fraunces, Inter } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
 import { SiteHeader } from "@/components/site-header";
 import { ContactSection } from "@/components/contact-section";
 import { getDisciplines, getSiteSettings } from "@/sanity/lib/content";
 
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
-  subsets: ["latin"],
-  // Real italic glyphs, not a CSS-synthesized slant — used for the "Work"
-  // accent line in components/featured-work.tsx.
-  style: ["normal", "italic"],
-  display: "swap",
-});
-
-const inter = Inter({
+// The one typeface used everywhere on the site, per the client's explicit
+// request to match benceszemerey.com exactly — same font, weight-based
+// hierarchy, and casing, site-wide. Self-hosted (not next/font/google,
+// which doesn't carry this face) from Fontshare's free Satoshi release; see
+// app/fonts/. Weights 400/500/700 cover every hierarchy level currently in
+// use — body copy, medium labels, and bold headings.
+const satoshi = localFont({
   variable: "--font-sans",
-  subsets: ["latin"],
   display: "swap",
-});
-
-// The bold condensed caps face used specifically for the name in the header
-// and hero — matches the reference site's typographic treatment (see
-// components/site-header.tsx and components/home-hero.tsx). Fraunces stays
-// the display face everywhere else for now; this is scoped to the
-// hero/header pass.
-const anton = Anton({
-  weight: "400",
-  variable: "--font-anton",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-// A heavier, uncondensed grotesk for section headings ("Selected Works")
-// — Anton's letterforms are tight enough that a multi-word heading reads
-// cramped; this face carries the same boldness with normal proportions.
-const archivoBlack = Archivo_Black({
-  weight: "400",
-  variable: "--font-archivo-black",
-  subsets: ["latin"],
-  display: "swap",
+  src: [
+    { path: "./fonts/Satoshi-Regular.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/Satoshi-Medium.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/Satoshi-Bold.woff2", weight: "700", style: "normal" },
+  ],
 });
 
 export const metadata: Metadata = {
@@ -56,10 +35,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   ]);
 
   return (
-    <html
-      lang="en"
-      className={`${fraunces.variable} ${inter.variable} ${anton.variable} ${archivoBlack.variable} h-full antialiased`}
-    >
+    <html lang="en" className={`${satoshi.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         <SiteHeader
           disciplines={disciplines.map((d) => ({ title: d.title, slug: d.slug }))}

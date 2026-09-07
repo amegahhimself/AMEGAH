@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import { LogoStrip } from './logo-strip'
+import { ClientsSection } from './clients-section'
 import type { LogoRef } from '@/sanity/lib/content'
 
 const withLogo: LogoRef = {
@@ -17,28 +17,19 @@ const logoNoUrl: LogoRef = {
   logo: { asset: { _ref: 'image-b-400x200-png' } },
 }
 
-describe('LogoStrip', () => {
+describe('ClientsSection', () => {
   it('anchors as #clients so the header nav can scroll straight to it', () => {
-    const { container } = render(<LogoStrip clients={[withLogo]} partners={[]} />)
+    const { container } = render(<ClientsSection clients={[withLogo]} />)
     expect(container.querySelector('#clients')).toBeInTheDocument()
   })
 
   it('titles the section', () => {
-    render(<LogoStrip clients={[withLogo]} partners={[]} />)
-    expect(screen.getByRole('heading', { name: 'Clients & Partners' })).toBeInTheDocument()
-  })
-
-  it('shows both groups when both have entries', () => {
-    // Scoped to level-3 headings: the section's own big headline is also
-    // literally the word "Clients" (a level-2 heading), so a bare text match
-    // is ambiguous between the two.
-    render(<LogoStrip clients={[withLogo]} partners={[withoutLogo]} />)
-    expect(screen.getByRole('heading', { level: 3, name: 'Clients' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 3, name: 'Partners' })).toBeInTheDocument()
+    render(<ClientsSection clients={[withLogo]} />)
+    expect(screen.getByRole('heading', { name: 'Clients' })).toBeInTheDocument()
   })
 
   it('links a logo out when the client gave a website', () => {
-    render(<LogoStrip clients={[withLogo]} partners={[]} />)
+    render(<ClientsSection clients={[withLogo]} />)
     expect(screen.getByRole('link', { name: 'Studio One' })).toHaveAttribute(
       'href',
       'https://example.com',
@@ -46,33 +37,24 @@ describe('LogoStrip', () => {
   })
 
   it('still credits a name that has no logo uploaded', () => {
-    render(<LogoStrip clients={[withoutLogo]} partners={[]} />)
+    render(<ClientsSection clients={[withoutLogo]} />)
     expect(screen.getByText('Studio Two')).toBeInTheDocument()
   })
 
   it('renders an entry with no website as plain text, not a dead link', () => {
-    render(<LogoStrip clients={[withoutLogo]} partners={[]} />)
+    render(<ClientsSection clients={[withoutLogo]} />)
     expect(screen.getByText('Studio Two')).toBeInTheDocument()
-    expect(
-      screen.queryByRole('link', { name: 'Studio Two' }),
-    ).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Studio Two' })).not.toBeInTheDocument()
   })
 
   it('renders a logo with no website as an image, not a dead link', () => {
-    render(<LogoStrip clients={[logoNoUrl]} partners={[]} />)
+    render(<ClientsSection clients={[logoNoUrl]} />)
     expect(screen.getByAltText('Studio Three')).toBeInTheDocument()
-    expect(
-      screen.queryByRole('link', { name: 'Studio Three' }),
-    ).not.toBeInTheDocument()
-  })
-
-  it('hides a group that has no entries', () => {
-    render(<LogoStrip clients={[withLogo]} partners={[]} />)
-    expect(screen.queryByText('Partners')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Studio Three' })).not.toBeInTheDocument()
   })
 
   it('says the client list is coming soon rather than rendering an empty section — the #clients anchor must still exist for the nav link to land on', () => {
-    const { container } = render(<LogoStrip clients={[]} partners={[]} />)
+    const { container } = render(<ClientsSection clients={[]} />)
     expect(screen.getByText('Client list coming soon.')).toBeInTheDocument()
     expect(container.querySelector('#clients')).toBeInTheDocument()
   })

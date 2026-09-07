@@ -9,16 +9,11 @@ export function FeaturedWork({ projects }: { projects: ProjectCardData[] }) {
     <section id="work" className="bg-ground-alt px-6 py-24 md:py-32">
       <div className="mb-6 flex items-center gap-3">
         <span className="h-px w-6 bg-accent" aria-hidden="true" />
-        <span className="index-meta !text-accent">Portfolio</span>
+        <span className="index-meta">Portfolio</span>
       </div>
 
-      <h2 aria-label="Selected Work" className="mb-14 leading-[0.9]">
-        <span className="font-condensed block text-5xl uppercase text-ink md:text-7xl">
-          Selected
-        </span>
-        <span className="text-outline mt-1 block font-display text-5xl italic md:text-7xl">
-          Work
-        </span>
+      <h2 className="mb-14 text-4xl font-bold uppercase leading-[0.9] text-ink md:text-6xl">
+        Selected Work
       </h2>
 
       <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:gap-10 lg:grid-cols-3">

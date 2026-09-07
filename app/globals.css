@@ -136,12 +136,19 @@
   --ink-muted: #8a8a85;
   --hairline: rgb(255 255 255 / 0.12);
 
-  /* Reference-matched accent, sampled from the brief's reference site
-     (danbarham.com): a warm red-orange, used sparingly on CTAs and the
-     role line — this is the one deliberate departure from the original
-     no-accent palette, scoped to the hero/header treatment for now. */
-  --accent: #e74519;
-  --accent-ink: #ffffff;
+  /* No color accent, per the client's own call on the 2026-09-06 review
+     call: "I want to stick to just white and gray" — the orange sampled
+     from the reference site (danbarham.com) is explicitly out. --accent is
+     kept as a token (rather than deleted) because every CTA, active state,
+     and eyebrow label already routes through it — this one value change
+     is what actually removes the color, without touching every component.
+     Set to --ink-soft (not pure white): plain white emphasis on a black
+     ground read as a stark black/white duotone rather than the intended
+     black-and-gray palette — reusing the existing gray scale here keeps
+     one token instead of inventing a fourth grey. --accent-ink is the
+     readable text color on a solid --accent fill. */
+  --accent: var(--ink-soft);
+  --accent-ink: #121212;
 
   /* A visibly lighter section background, used to lift one section off the
      page ground without a hard border — see components/featured-work.tsx.
@@ -159,13 +166,10 @@
   --color-ground-alt: var(--ground-alt);
   --color-accent: var(--accent);
   --color-accent-ink: var(--accent-ink);
-  --font-condensed: var(--font-anton);
-  --font-heading: var(--font-archivo-black);
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
   --color-ink-muted: var(--ink-muted);
   --color-hairline: var(--hairline);
-  --font-display: var(--font-fraunces);
 }
 
 body {
@@ -186,18 +190,6 @@ button:not(:disabled) {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-muted);
-}
-
-/* A hollow, outline-only heading accent — the italic "second line" under a
-   bold headline (e.g. "Selected / Work"). Reference-matched: sampling
-   danbarham.com's own equivalent found its letter interiors read the same
-   as the page background, with only the stroke lightened — a real outline,
-   not a low-opacity solid fill. Falls back to a faint solid fill in any
-   browser that ignores -webkit-text-stroke, so the text stays legible. */
-.text-outline {
-  color: var(--ink-muted);
-  -webkit-text-stroke: 1.5px var(--ink-muted);
-  -webkit-text-fill-color: transparent;
 }
 
 /* Spec 5.3: media fades and rises 8px as it enters the viewport. Driven by

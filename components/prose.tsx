@@ -49,17 +49,12 @@ export function hasProse(value?: PortableTextValue): boolean {
  * Prose the client wrote in Studio, rendered at a comfortable reading width.
  * One definition of what a link looks like, shared by every page that renders
  * CMS prose, so a project description and a biography cannot drift apart.
- *
- * `serif` sets the biography in the display face, which the spec asks for on
- * the About page; project descriptions stay in the body face.
  */
-export function Prose({ value, serif = false }: { value?: PortableTextValue; serif?: boolean }) {
+export function Prose({ value }: { value?: PortableTextValue }) {
   if (!hasProse(value)) return null
 
   return (
-    <div
-      className={`max-w-[var(--measure)] text-ink-soft [&_p]:mt-4${serif ? ' font-display' : ''}`}
-    >
+    <div className="max-w-[var(--measure)] text-ink-soft [&_p]:mt-4">
       <PortableText value={value} components={components} />
     </div>
   )

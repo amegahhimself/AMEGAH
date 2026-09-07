@@ -51,7 +51,7 @@ export function SelectedWorkCard({
           already: title and category rows from neighbouring cards ran
           together on one visual line.
         */}
-        <h3 className="font-heading min-w-0 truncate text-base uppercase text-ink md:text-lg">
+        <h3 className="min-w-0 truncate text-base font-bold uppercase text-ink md:text-lg">
           {project.title}
         </h3>
         {project.category && (
