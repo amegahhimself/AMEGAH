@@ -34,7 +34,12 @@ export function SiteHeader({
 }) {
   const name = settings?.name || FALLBACK_NAME
   const [open, setOpen] = useState(false)
+  // menuButtonRef opens the overlay and lives in the header, which is
+  // hidden on mobile once the overlay is open (see className below) — so
+  // it can't also be the thing focus traps/wraps to while open. closeButtonRef
+  // is the overlay's own control and does that job instead.
   const menuButtonRef = useRef<HTMLButtonElement>(null)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
   const navRef = useRef<HTMLElement>(null)
 
   const links = [
@@ -44,17 +49,18 @@ export function SiteHeader({
 
   // WCAG 2.4.3 / 2.1.2: the overlay covers the page visually, so a keyboard
   // user tabbing past its last link must not land on content hidden behind
-  // it. Trap Tab/Shift+Tab within the menu button + its links while open,
-  // support Escape to close, and return focus to the trigger on close.
+  // it. Trap Tab/Shift+Tab within the overlay's own close button + its links
+  // while open, support Escape to close, and return focus to the header's
+  // trigger button on close (once the header is visible again).
   useEffect(() => {
     if (!open) return
 
     const nav = navRef.current
-    const menuButton = menuButtonRef.current
-    if (!nav || !menuButton) return
+    const closeButton = closeButtonRef.current
+    if (!nav || !closeButton) return
 
     const links = Array.from(nav.querySelectorAll<HTMLElement>('a[href]'))
-    const focusable = [menuButton, ...links]
+    const focusable = [closeButton, ...links]
     focusable[1]?.focus()
 
     function onKeyDown(event: KeyboardEvent) {
@@ -99,7 +105,9 @@ export function SiteHeader({
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-hairline bg-ground/80 backdrop-blur">
+      <header
+        className={`sticky top-0 z-50 border-b border-hairline bg-ground/80 backdrop-blur ${open ? 'max-md:hidden' : ''}`}
+      >
         <div className="flex items-start justify-between gap-4 px-6 py-4 md:items-center">
           <Link href="/" className="leading-none">
             {/* The client's full logo also has a jagged distressed
@@ -150,14 +158,10 @@ export function SiteHeader({
             type="button"
             aria-label="Menu"
             aria-expanded={open}
-            onClick={() => setOpen((value) => !value)}
+            onClick={() => setOpen(true)}
             className="index-meta inline-flex min-h-11 min-w-11 items-center justify-center border border-hairline px-3 transition-colors hover:border-ink-soft md:hidden"
           >
-            {open ? (
-              <XIcon className="size-5" aria-hidden="true" />
-            ) : (
-              <MenuIcon className="size-5" aria-hidden="true" />
-            )}
+            <MenuIcon className="size-5" aria-hidden="true" />
           </button>
         </div>
       </header>
@@ -168,10 +172,20 @@ export function SiteHeader({
         aria-modal="true"
         aria-label="Menu"
         aria-hidden={!open}
-        className={`fixed inset-0 z-40 flex flex-col gap-6 overflow-y-auto bg-ground/90 px-6 pb-10 pt-24 backdrop-blur-md transition-opacity duration-300 md:hidden ${
+        className={`fixed inset-0 z-40 flex flex-col gap-6 overflow-y-auto bg-ground/90 px-6 pb-10 pt-6 backdrop-blur-md transition-opacity duration-300 md:hidden ${
           open ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
       >
+        <button
+          ref={closeButtonRef}
+          type="button"
+          aria-label="Close menu"
+          onClick={close}
+          className="index-meta ml-auto inline-flex min-h-11 min-w-11 items-center justify-center border border-hairline px-3 transition-colors hover:border-ink-soft"
+        >
+          <XIcon className="size-5" aria-hidden="true" />
+        </button>
+
         {links.map((link) => (
           <Link
             key={link.href}
