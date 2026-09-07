@@ -79,7 +79,7 @@ describe('SiteHeader', () => {
       expect(within(dialog).getByRole('link', { name: 'Director' })).toHaveFocus()
     })
 
-    it('cycles from the last focusable element back to the first (the menu button)', async () => {
+    it('cycles from the last focusable element back to the first (the overlay’s own close button)', async () => {
       render(<SiteHeader disciplines={disciplines} settings={null} />)
       await userEvent.click(screen.getByRole('button', { name: 'Menu' }))
       const dialog = screen.getByRole('dialog', { name: 'Menu' })
@@ -89,7 +89,7 @@ describe('SiteHeader', () => {
       expect(lastLink).toHaveFocus()
 
       await userEvent.tab()
-      expect(screen.getByRole('button', { name: 'Menu' })).toHaveFocus()
+      expect(within(dialog).getByRole('button', { name: 'Close menu' })).toHaveFocus()
     })
 
     it('shift+tabs from the first focusable element to the last', async () => {
@@ -97,9 +97,9 @@ describe('SiteHeader', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Menu' }))
       const dialog = screen.getByRole('dialog', { name: 'Menu' })
 
-      const menuButton = screen.getByRole('button', { name: 'Menu' })
-      menuButton.focus()
-      expect(menuButton).toHaveFocus()
+      const closeButton = within(dialog).getByRole('button', { name: 'Close menu' })
+      closeButton.focus()
+      expect(closeButton).toHaveFocus()
 
       await userEvent.tab({ shift: true })
       expect(within(dialog).getByRole('link', { name: 'Partners' })).toHaveFocus()
