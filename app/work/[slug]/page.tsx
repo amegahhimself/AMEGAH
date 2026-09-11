@@ -35,6 +35,8 @@ export async function generateMetadata({ params }: PageProps<'/work/[slug]'>) {
       title,
       description,
       type: 'article',
+      siteName: 'Amegah',
+      locale: 'en_US',
       // Next 16 merges metadata with `metadata[key] ?? null`, so an explicit
       // `images: undefined` becomes `null` and overwrites (rather than
       // inherits) the parent's images

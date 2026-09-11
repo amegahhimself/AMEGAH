@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 
@@ -35,6 +35,15 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
   },
+};
+
+// themeColor moved out of `metadata` into its own export in this Next.js
+// version — the build fails a lint check ("Unsupported metadata themeColor
+// ... move it to viewport export instead") if it stays in `metadata`.
+// Matches app/manifest.ts's background/theme_color; flat field, so (unlike
+// `openGraph`) it's inherited by every page automatically.
+export const viewport: Viewport = {
+  themeColor: "#0a0a0a",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
