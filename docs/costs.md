@@ -7,9 +7,11 @@ change.
 
 ## Open questions for the client
 
-- [ ] **`amegah.com` is already taken.** Does he have another domain in mind
-      (a different TLD like `.studio`, `.film`, `.tv`, `.co`, or a different
-      name entirely)? Nothing can be registered until this is decided.
+- [x] **`amegah.com` is already taken.** Resolved 2026-09-11 — `amegah.co`
+      was registered and connected to the Vercel project instead. See
+      `docs/handover.md`'s domain entry: it was bought under the developer's
+      Vercel account, so ownership still needs to move to the client like
+      everything else there.
 - [ ] Stay on Mux for video, or switch to a cheaper/free alternative
       (YouTube, Vimeo, Cloudflare Stream — see below)?
 - [ ] Launch hosting on Vercel's free tier, or go straight to the paid plan?
@@ -18,11 +20,9 @@ change.
 
 ## 1. Domain registration
 
-`amegah.com` is taken, so a different domain needs to be chosen before
-anything can go live under his own name. Registration is a small annual fee
-(commonly $10–20/year depending on the TLD chosen), paid to whichever
-registrar is used (Namecheap was already open in the browser during this
-project, so presumably the plan).
+`amegah.com` was taken, so `amegah.co` was registered instead (via Vercel's
+own registrar) and is now connected to the site. Registration is a small
+annual fee (commonly $10–20/year depending on the TLD/registrar).
 
 ## 2. Hosting — Vercel
 

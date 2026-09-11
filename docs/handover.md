@@ -29,9 +29,13 @@ live website depends on a third party's personal login indefinitely.
   automatically with the Vercel transfer. Worth explicitly confirming with
   the client that the billing method on file becomes theirs, not the
   developer's card, once transferred.
-- **Domain** — not purchased yet (see `docs/costs.md`). When it is, register
-  it directly under the client's own registrar account from the start,
-  rather than the developer's, to avoid a second transfer later.
+- **Domain** — `amegah.co` was purchased and connected on 2026-09-11 (Vercel
+  domains: `amegah.co` + `www.amegah.co`, DNS on Vercel's own nameservers).
+  It was bought under the developer's Vercel account, not the client's — so
+  it needs to move like everything else here. `NEXT_PUBLIC_SITE_URL` is now
+  set to `https://www.amegah.co` in Production, which is what `lib/site-url.ts`
+  (sitemap, robots.txt, canonical links, metadataBase, JSON-LD) resolves to;
+  update that env var if the canonical domain/subdomain ever changes.
 - **GitHub repo** — currently a private repo under the developer's personal
   account (`murvyn/amegah`), connected to Vercel's Git integration for
   auto-deploy on push. Decide with the client whether the repo itself
@@ -55,7 +59,7 @@ live website depends on a third party's personal login indefinitely.
 | `NEXT_PUBLIC_SANITY_PROJECT_ID` | Sanity client (app + Studio) | Development, Preview, **Production** |
 | `NEXT_PUBLIC_SANITY_DATASET` | Sanity client (app + Studio) | Development, Preview, **Production** |
 | `SANITY_API_READ_TOKEN` | Server-side Sanity fetches (`sanity/lib/client.ts`) | Development, Preview, **Production** |
-| `SANITY_API_WRITE_TOKEN` | `scripts/seed.ts` only — not read at runtime | Local only (via `.env.local`); does not need to be set in Vercel |
+| `SANITY_API_WRITE_TOKEN` | `scripts/seed.ts` / `scripts/seed-placeholders.ts` only — not read at runtime | Local only (via `.env.local`); **removed from Vercel on 2026-09-11** after Vercel's dashboard flagged it as a plaintext write-capable credential sitting unused in Production/Preview/Development — nothing deployed ever read it |
 | `SANITY_REVALIDATE_SECRET` | `/api/revalidate` webhook handler | Development, Preview, **Production** — must match the secret configured on the Sanity webhook |
 | `MUX_TOKEN_ID` | Mux API access token id (provisioned by the Vercel Mux integration) | Development, Preview, **Production** |
 | `MUX_TOKEN_SECRET` | Mux API secret key | Development, Preview, **Production** |
