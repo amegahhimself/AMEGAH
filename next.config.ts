@@ -18,6 +18,22 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'image.mux.com', pathname: '/**' },
     ],
   },
+  // Baseline security headers. Not CSP — this site embeds the Sanity
+  // Studio (/studio) and Mux's player, both of which pull in scripts/styles
+  // from origins that would need constant upkeep in a CSP allowlist; the
+  // headers below are the ones with no such cost.
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+        ],
+      },
+    ]
+  },
 }
 
 export default nextConfig

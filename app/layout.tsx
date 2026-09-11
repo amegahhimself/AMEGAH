@@ -5,6 +5,7 @@ import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { ContactSection } from "@/components/contact-section";
 import { getDisciplines, getSiteSettings } from "@/sanity/lib/content";
+import { SITE_URL } from "@/lib/site-url";
 
 // The one typeface used everywhere on the site, per the client's explicit
 // request to match benceszemerey.com exactly — same font, weight-based
@@ -23,9 +24,17 @@ const satoshi = localFont({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "Amegah — Director, Cinematographer & Photographer",
   description:
     "Selected directing, cinematography and photography work by Amegah.",
+  // Pages that set their own openGraph (app/page.tsx, app/[discipline],
+  // app/work/[slug]) inherit this card type by not repeating `twitter` at
+  // all — Next 16 falls back to openGraph fields for a summary_large_image
+  // card, so there's nothing to duplicate per page.
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
@@ -34,9 +43,30 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     getSiteSettings().catch(() => null),
   ]);
 
+  // Person schema, not Organization — this is a solo director/DP/photographer
+  // site, and settings.name/role/instagramUrl are exactly the fields a
+  // search engine's Person schema wants. Only rendered once real data
+  // exists so an empty dataset doesn't emit a schema with no content.
+  const personSchema = settings?.name && {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: settings.name,
+    url: SITE_URL,
+    ...(settings.role && { jobTitle: settings.role }),
+    ...(settings.instagramUrl && { sameAs: [settings.instagramUrl] }),
+  };
+
   return (
     <html lang="en" className={`${satoshi.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
+        {personSchema && (
+          <script
+            type="application/ld+json"
+            // Static JSON.stringify of our own constructed object (Sanity
+            // site settings), not user-supplied markup.
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(personSchema) }}
+          />
+        )}
         <SiteHeader
           disciplines={disciplines.map((d) => ({ title: d.title, slug: d.slug }))}
           settings={settings}

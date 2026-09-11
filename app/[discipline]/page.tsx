@@ -9,6 +9,7 @@ import {
   getProjectsForDiscipline,
 } from '@/sanity/lib/content'
 import { urlFor } from '@/sanity/lib/image'
+import { SITE_URL } from '@/lib/site-url'
 
 // No generateStaticParams: disciplines are client-creatable and
 // client-deletable, so this route's params must not depend on content
@@ -35,6 +36,7 @@ export async function generateMetadata({ params }: PageProps<'/[discipline]'>) {
     // (node_modules/next/dist/lib/metadata/resolve-metadata.js). Omitting
     // the key entirely when there's no value lets inheritance work.
     ...(discipline.description && { description: discipline.description }),
+    alternates: { canonical: `${SITE_URL}/${slug}` },
     openGraph: {
       title,
       ...(discipline.description && { description: discipline.description }),

@@ -1,8 +1,9 @@
 import type { MetadataRoute } from 'next'
 
 import { getAllProjectSlugs, getDisciplines } from '@/sanity/lib/content'
+import { SITE_URL } from '@/lib/site-url'
 
-const BASE_URL = 'https://amegah.com'
+const BASE_URL = SITE_URL
 
 /**
  * Lists every project and discipline URL for search engines to discover.
