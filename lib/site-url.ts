@@ -2,13 +2,15 @@
  * The one canonical, absolute site URL — used for the sitemap, robots.txt,
  * metadataBase, canonical links and JSON-LD.
  *
- * The client's own domain isn't purchased yet (see docs/costs.md), so this
- * can't be hardcoded to a real domain. `NEXT_PUBLIC_SITE_URL` is the escape
- * hatch for when it is: set it in Vercel once the domain goes live, and
- * everything derived from this file picks it up with no code change.
- * Until then this falls back to Vercel's own system env vars so previews
- * and the current amegah.vercel.app production deployment still get a
- * correct, absolute URL.
+ * Not hardcoded, because the client's domain wasn't settled when this file
+ * was written (see docs/costs.md's now-resolved open question). Since
+ * amegah.co went live, `NEXT_PUBLIC_SITE_URL` is set to
+ * `https://www.amegah.co` in Vercel's Production environment — see
+ * docs/handover.md's domain entry — so update it there if the canonical
+ * domain/subdomain ever changes rather than editing this file. Preview
+ * deployments and any environment without that override fall back to
+ * Vercel's own system env vars, so they still resolve to a correct,
+ * absolute URL of their own.
  */
 export const SITE_URL = (
   process.env.NEXT_PUBLIC_SITE_URL ||
