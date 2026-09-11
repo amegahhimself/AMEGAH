@@ -39,6 +39,16 @@ describe('ContactSection', () => {
     )
   })
 
+  it('offers a WhatsApp click-to-chat link alongside the plain call link, with trunk-prefix parens stripped', () => {
+    render(
+      <ContactSection settings={{ ...settings, phone: '+233 (0) 55 976 0048' }} />,
+    )
+    expect(screen.getByRole('link', { name: 'WhatsApp' })).toHaveAttribute(
+      'href',
+      'https://wa.me/233559760048',
+    )
+  })
+
   it('never renders a form — the brief asks only for contact information', () => {
     const { container } = render(<ContactSection settings={settings} />)
     expect(container.querySelector('form')).not.toBeInTheDocument()

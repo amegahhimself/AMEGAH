@@ -6,6 +6,18 @@ import type { SiteSettings } from '@/sanity/lib/content'
 // matches has one — deliberately not copied for the same reason.
 
 /**
+ * The digits WhatsApp's click-to-chat link (wa.me/<number>) needs: full
+ * international number, no spaces, dashes, parentheses or leading "+".
+ * Parenthesized digits are dropped outright rather than just unwrapped —
+ * they're conventionally a trunk prefix (e.g. the "(0)" in a Ghanaian
+ * "+233 (0) 55 976 0048") that's meaningless once the country code is
+ * already present, and wa.me rejects a number that still has it.
+ */
+function whatsAppNumber(phone: string): string {
+  return phone.replace(/\([^)]*\)/g, '').replace(/\D/g, '')
+}
+
+/**
  * The site-wide Contact/footer block, rendered once from app/layout.tsx so
  * every page ends the same way. There is no separate /contact page and no
  * separate plain footer — a bare "get in touch" footer under this section
@@ -40,15 +52,25 @@ export function ContactSection({ settings }: { settings: SiteSettings | null }) 
           {settings?.phone && (
             <div className="border-t border-hairline py-6">
               <p className="index-meta mb-2">Phone</p>
-              {/* inline-flex, not inline: min-height is inert on a plain
-                  inline element, so this would not actually meet the 44px
-                  touch target without it. */}
-              <a
-                href={`tel:${settings.phone}`}
-                className="inline-flex min-h-11 items-center text-lg font-semibold text-ink hover:text-ink-soft"
-              >
-                {settings.phone}
-              </a>
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                {/* inline-flex, not inline: min-height is inert on a plain
+                    inline element, so this would not actually meet the 44px
+                    touch target without it. */}
+                <a
+                  href={`tel:${settings.phone}`}
+                  className="inline-flex min-h-11 items-center text-lg font-semibold text-ink hover:text-ink-soft"
+                >
+                  {settings.phone}
+                </a>
+                <a
+                  href={`https://wa.me/${whatsAppNumber(settings.phone)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="index-meta inline-flex min-h-11 items-center border border-hairline px-4 transition-colors hover:border-ink-soft hover:text-ink"
+                >
+                  WhatsApp
+                </a>
+              </div>
             </div>
           )}
 
