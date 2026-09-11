@@ -14,6 +14,7 @@ import {
   getSiteSettings,
 } from '@/sanity/lib/content'
 import { urlFor } from '@/sanity/lib/image'
+import { SITE_URL } from '@/lib/site-url'
 
 export async function generateMetadata() {
   const settings = await getSiteSettings()
@@ -32,6 +33,7 @@ export async function generateMetadata() {
     // (node_modules/next/dist/lib/metadata/resolve-metadata.js). Omitting
     // the key entirely when there's no value lets inheritance work.
     ...(settings.seoDescription && { description: settings.seoDescription }),
+    alternates: { canonical: SITE_URL },
     openGraph: {
       title,
       ...(settings.seoDescription && { description: settings.seoDescription }),

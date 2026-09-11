@@ -9,6 +9,7 @@ import { adjacentProjects } from '@/lib/adjacent-projects'
 import { creditLine } from '@/lib/credits'
 import { getDisciplineProjectRefs, getProjectBySlug } from '@/sanity/lib/content'
 import { urlFor } from '@/sanity/lib/image'
+import { SITE_URL } from '@/lib/site-url'
 
 // No generateStaticParams: this route's params come from CMS content, and a
 // CMS-driven route must not depend on content existing at build time — an
@@ -29,6 +30,7 @@ export async function generateMetadata({ params }: PageProps<'/work/[slug]'>) {
   return {
     title,
     description,
+    alternates: { canonical: `${SITE_URL}/work/${slug}` },
     openGraph: {
       title,
       description,
