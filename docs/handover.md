@@ -3,6 +3,51 @@
 Quick reference for deploying this project or taking it over. Read this before
 touching Vercel env vars or the Sanity webhook config.
 
+## Handing over to the client — accounts still need to move (not done)
+
+Everything below was provisioned under the developer's own personal
+accounts, not the client's. This is fine during development, but **before
+the client actually owns and runs this site**, ownership of these accounts
+needs to move to something the client controls — otherwise the client's
+live website depends on a third party's personal login indefinitely.
+
+- **Vercel** — the project lives under the personal team
+  `marvins-projects-8d710c28`. Transfer the project to a team the client
+  owns (Vercel supports project transfer between accounts/teams — the
+  client will need their own Vercel account first), or add the client as an
+  Owner on this team if a full transfer isn't wanted yet. Whoever owns this
+  team is also who Mux billing follows (see below), and who holds the
+  `amegah.vercel.app` domain alias.
+- **Sanity** — the project (`project-citron-flame`, id `fknc0b0k`) lives
+  under the personal org "Marvin's projects". Either transfer the project to
+  an organization the client owns, or add the client (or their designated
+  admin) as a project member with Administrator access — the webhook
+  management permission specifically requires Administrator, confirmed
+  while setting up the revalidate webhook above; a lower role can't do this.
+- **Mux** — not a separate signup; it's provisioned through the Vercel
+  Marketplace integration attached to the Vercel project, so it moves
+  automatically with the Vercel transfer. Worth explicitly confirming with
+  the client that the billing method on file becomes theirs, not the
+  developer's card, once transferred.
+- **Domain** — not purchased yet (see `docs/costs.md`). When it is, register
+  it directly under the client's own registrar account from the start,
+  rather than the developer's, to avoid a second transfer later.
+- **GitHub repo** — currently a private repo under the developer's personal
+  account (`murvyn/amegah`), connected to Vercel's Git integration for
+  auto-deploy on push. Decide with the client whether the repo itself
+  transfers to an account/org they own (breaking the existing Vercel Git
+  link until reconnected to the new location) or whether the developer
+  keeps maintaining the codebase as an ongoing arrangement — this is a
+  business decision, not a technical default.
+- **API tokens/secrets** — `SANITY_API_READ_TOKEN`, `SANITY_API_WRITE_TOKEN`,
+  and `SANITY_REVALIDATE_SECRET` were all generated under the developer's
+  Sanity access. They keep working after an ownership transfer (Sanity
+  tokens are project-scoped, not creator-scoped), but as a security
+  cleanup step, consider rotating them post-handover — generate fresh
+  tokens under the client's own account, update them in Vercel, and revoke
+  the old ones — so the developer's personal credentials aren't sitting in
+  a site they no longer operate.
+
 ## Required environment variables
 
 | Variable | Used by | Vercel environments |
@@ -64,27 +109,20 @@ authenticated one returns them). Do not make it public.
 comfortably. The client inherits this account at handover, so the encoding tier
 configured in `sanity.config.ts`'s `muxInput()` is their cost to carry.
 
-## Sanity webhook setup (not yet done — required before launch)
+## Sanity webhook setup — done (2026-09-11)
 
-The revalidate endpoint (`app/api/revalidate/route.ts`) exists but no webhook
-currently calls it. Set one up:
+The revalidate endpoint (`app/api/revalidate/route.ts`) is live and wired up.
+Configured as:
 
-1. Go to `sanity.io/manage` → your project → **API** → **Webhooks**.
-2. Create a webhook pointed at `https://<production-domain>/api/revalidate`.
-3. Set its secret to the same value as `SANITY_REVALIDATE_SECRET` in Vercel.
-4. Trigger on **create**, **update**, and **delete**.
-5. **Set the GROQ projection so `_type` is present even on delete events.**
-   Sanity's default projection is built from the document itself, and a
-   deleted document has no "after" state — so a naive `{_id, _type}`
-   projection can come back with `_type` missing on delete payloads. This
-   project's `app/api/revalidate/tags.ts` (`tagsForPayload`) keys entirely off
-   `_type` to decide which cache tag to revalidate, so a missing `_type` means
-   **deleted content silently never gets revalidated** — stale content stays
-   cached indefinitely.
-
-   Use Sanity's Delta-GROQ `before()` / `after()` functions in the
-   projection to pull `_type` from whichever side of the change still has it,
-   e.g.:
+1. `sanity.io/manage` → project → **API** → **Webhooks** → webhook named
+   **"Vercel revalidate"** (id `L0mrgY2hMPIYetvy`), pointed at
+   `https://amegah.vercel.app/api/revalidate`, dataset `production`.
+2. Its secret matches `SANITY_REVALIDATE_SECRET`, set in all three Vercel
+   environments (Production, Preview, Development) and pulled into
+   `.env.local`.
+3. Triggers on **create**, **update**, and **delete**.
+4. **The GROQ projection is set** so `_type` resolves even on delete events —
+   see below for why this matters. Current value:
 
    ```groq
    {
@@ -93,11 +131,40 @@ currently calls it. Set one up:
    }
    ```
 
-   (Verify exact syntax against the current Sanity webhook projection editor
-   when you set this up — Delta-GROQ is documented at
-   sanity.io/docs/developer-guides/projections-in-groq-powered-webhooks — the
-   important thing is that `_type` must resolve on delete, not the exact
-   expression above.)
+Verified end-to-end: patched a field directly in the dataset, confirmed the
+webhook logged a `200` in Vercel's runtime logs, and confirmed the live site
+picked up the change within ~10 seconds with no manual cache action.
+
+**Why the projection matters.** Sanity's default projection is built from the
+document itself, and a deleted document has no "after" state — so a naive
+`{_id, _type}` projection can come back with `_type` missing on delete
+payloads. This project's `app/api/revalidate/tags.ts` (`tagsForPayload`) keys
+entirely off `_type` to decide which cache tag to revalidate, so a missing
+`_type` means **deleted content silently never gets revalidated** — stale
+content stays cached indefinitely. The Delta-GROQ `before()`/`after()`
+functions above pull `_type` from whichever side of the change still has it.
+
+**Two gotchas hit while setting this up, worth knowing if it ever needs
+re-doing:**
+
+- **A newly-added Vercel env var doesn't apply to the deployment that's
+  already running.** `vercel env add` (or the dashboard) only bakes the value
+  into the *next* deployment. Adding `SANITY_REVALIDATE_SECRET` without
+  redeploying left the currently-live deployment still seeing it as unset, so
+  the webhook got a `500` ("Revalidation secret is not configured") every
+  time it fired. Fixed with `vercel redeploy <deployment-id> --target
+  production` after adding the var — no code change needed, just a fresh
+  deployment.
+- **The Projection field in Sanity's webhook editor is a CodeMirror editor,
+  not a plain textbox.** Scripted/programmatic edits to the underlying
+  `<textarea>` don't stick — Sanity's UI reads from its own editor state on
+  save, not the raw DOM value, so a script-set value silently reverts on
+  reload. It has to be typed/pasted by actually clicking into the rendered
+  box in a browser.
+
+If this webhook is ever recreated (e.g. new project, new environment), redo
+all of the above — a webhook with the URL/secret/triggers but no projection
+will work for everyday edits but silently fail to invalidate on deletes.
 
 ## A local build can serve stale CMS content
 
