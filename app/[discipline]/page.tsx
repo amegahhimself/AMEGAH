@@ -41,6 +41,8 @@ export async function generateMetadata({ params }: PageProps<'/[discipline]'>) {
       title,
       ...(discipline.description && { description: discipline.description }),
       type: 'website',
+      siteName: 'Amegah',
+      locale: 'en_US',
       // Same trap applies to `images`: an explicit `undefined` overwrites
       // rather than inherits, so omit the key entirely when there's no
       // cover image instead of passing `undefined`.

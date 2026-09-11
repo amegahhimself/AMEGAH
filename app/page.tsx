@@ -38,6 +38,14 @@ export async function generateMetadata() {
       title,
       ...(settings.seoDescription && { description: settings.seoDescription }),
       ...(ogImage && { images: [{ url: ogImage, width: 1200, height: 630 }] }),
+      // openGraph is not a flat field: a page that sets its own openGraph
+      // object fully replaces the root layout's rather than merging with
+      // it (node_modules/next/dist/lib/metadata/resolvers/resolve-opengraph.js
+      // only ever resolves the current level's object), so siteName/locale
+      // have to be repeated on every page-level openGraph, not just here.
+      siteName: 'Amegah',
+      locale: 'en_US',
+      type: 'website',
     },
   }
 }

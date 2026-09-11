@@ -3,6 +3,9 @@ import type { NextConfig } from 'next'
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
+  // Drops the `X-Powered-By: Next.js` response header — free, and no
+  // reason to hand a scanner the framework/version for free.
+  poweredByHeader: false,
   images: {
     // Images are resized by Sanity's CDN rather than Vercel's optimizer —
     // Sanity already does the work, and Vercel's Hobby plan caps image
@@ -30,6 +33,11 @@ const nextConfig: NextConfig = {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+          // Nothing on this site uses the camera, mic, or geolocation —
+          // deny them so an embedded/compromised third-party script (Mux
+          // player, Sanity Studio) can't silently request them.
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
         ],
       },
     ]
