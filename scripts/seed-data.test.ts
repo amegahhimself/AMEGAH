@@ -4,12 +4,12 @@ import { taxonomy } from './seed-data'
 const bySlug = (slug: string) => taxonomy.find((d) => d.slug === slug)
 
 describe('seed taxonomy matches the client brief', () => {
-  it('has the four disciplines', () => {
+  it('has the four disciplines, with Events before Photography per the client\'s nav-order request', () => {
     expect(taxonomy.map((d) => d.slug)).toEqual([
       'director',
       'cinematography',
-      'photography',
       'events',
+      'photography',
     ])
   })
 
@@ -69,5 +69,11 @@ describe('seed taxonomy matches the client brief', () => {
       'editorial',
       'editorial',
     ])
+  })
+
+  it('places Events before Photography, matching how they should appear on scroll/in the nav', () => {
+    const events = taxonomy.findIndex((d) => d.slug === 'events')
+    const photography = taxonomy.findIndex((d) => d.slug === 'photography')
+    expect(events).toBeLessThan(photography)
   })
 })

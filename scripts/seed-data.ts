@@ -40,6 +40,19 @@ export const taxonomy: SeedDiscipline[] = [
     ],
   },
   {
+    title: 'Events',
+    slug: 'events',
+    cadence: 'editorial',
+    categories: [
+      { title: 'Corporate', slug: 'corporate' },
+      { title: 'Traditional Wedding', slug: 'traditional-wedding' },
+      { title: 'White Wedding', slug: 'white-wedding' },
+      { title: 'Parties', slug: 'parties' },
+      { title: 'Funerals', slug: 'funerals' },
+      { title: 'Birthdays', slug: 'birthdays' },
+    ],
+  },
+  {
     title: 'Photography',
     slug: 'photography',
     cadence: 'editorial',
@@ -59,19 +72,6 @@ export const taxonomy: SeedDiscipline[] = [
           { title: 'Birthdays', slug: 'birthdays' },
         ],
       },
-    ],
-  },
-  {
-    title: 'Events',
-    slug: 'events',
-    cadence: 'editorial',
-    categories: [
-      { title: 'Corporate', slug: 'corporate' },
-      { title: 'Traditional Wedding', slug: 'traditional-wedding' },
-      { title: 'White Wedding', slug: 'white-wedding' },
-      { title: 'Parties', slug: 'parties' },
-      { title: 'Funerals', slug: 'funerals' },
-      { title: 'Birthdays', slug: 'birthdays' },
     ],
   },
 ]
