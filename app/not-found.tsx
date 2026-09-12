@@ -1,4 +1,12 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
+
+// Without its own title this page silently inherited the root layout's
+// marketing title, so a broken link's browser tab looked identical to a
+// real page.
+export const metadata: Metadata = {
+  title: 'Page Not Found — Amegah',
+}
 
 // A 404 page is normally reached by a broken/typoed URL — an unauthenticated
 // GET, never a form or user-supplied side effect — so it's plain content,
