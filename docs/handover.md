@@ -3,54 +3,70 @@
 Quick reference for deploying this project or taking it over. Read this before
 touching Vercel env vars or the Sanity webhook config.
 
-## Handing over to the client — accounts still need to move (not done)
+## Infrastructure ownership — full independent transfer to the client (decided 2026-09-13)
 
-Everything below was provisioned under the developer's own personal
-accounts, not the client's. This is fine during development, but **before
-the client actually owns and runs this site**, ownership of these accounts
-needs to move to something the client controls — otherwise the client's
-live website depends on a third party's personal login indefinitely.
+`docs/Amegah.Com Brief.pdf` §9 ("Website Ownership") is explicit: *"All
+final website assets should belong to the client... including custom
+code, website files"* and *"structured in a way that removes dependence
+on the designer."* That rules out an agency-hosts-forever arrangement —
+the client needs to end up with his own independent Vercel, Sanity, and
+Mux accounts, not access into the developer's.
 
-- **Vercel** — the project lives under the personal team
-  `marvins-projects-8d710c28`. Transfer the project to a team the client
-  owns (Vercel supports project transfer between accounts/teams — the
-  client will need their own Vercel account first), or add the client as an
-  Owner on this team if a full transfer isn't wanted yet. Whoever owns this
-  team is also who Mux billing follows (see below), and who holds the
-  `amegah.vercel.app` domain alias.
-- **Sanity** — the project (`project-citron-flame`, id `fknc0b0k`) lives
-  under the personal org "Marvin's projects". Either transfer the project to
-  an organization the client owns, or add the client (or their designated
-  admin) as a project member with Administrator access — the webhook
-  management permission specifically requires Administrator, confirmed
-  while setting up the revalidate webhook above; a lower role can't do this.
-- **Mux** — not a separate signup; it's provisioned through the Vercel
-  Marketplace integration attached to the Vercel project, so it moves
-  automatically with the Vercel transfer. Worth explicitly confirming with
-  the client that the billing method on file becomes theirs, not the
-  developer's card, once transferred.
-- **Domain** — `amegah.co` was purchased and connected on 2026-09-11 (Vercel
-  domains: `amegah.co` + `www.amegah.co`, DNS on Vercel's own nameservers).
-  It was bought under the developer's Vercel account, not the client's — so
-  it needs to move like everything else here. `NEXT_PUBLIC_SITE_URL` is now
-  set to `https://www.amegah.co` in Production, which is what `lib/site-url.ts`
-  (sitemap, robots.txt, canonical links, metadataBase, JSON-LD) resolves to;
-  update that env var if the canonical domain/subdomain ever changes.
-- **GitHub repo** — currently a private repo under the developer's personal
-  account (`murvyn/amegah`), connected to Vercel's Git integration for
-  auto-deploy on push. Decide with the client whether the repo itself
-  transfers to an account/org they own (breaking the existing Vercel Git
-  link until reconnected to the new location) or whether the developer
-  keeps maintaining the codebase as an ongoing arrangement — this is a
-  business decision, not a technical default.
-- **API tokens/secrets** — `SANITY_API_READ_TOKEN`, `SANITY_API_WRITE_TOKEN`,
-  and `SANITY_REVALIDATE_SECRET` were all generated under the developer's
-  Sanity access. They keep working after an ownership transfer (Sanity
-  tokens are project-scoped, not creator-scoped), but as a security
-  cleanup step, consider rotating them post-handover — generate fresh
-  tokens under the client's own account, update them in Vercel, and revoke
-  the old ones — so the developer's personal credentials aren't sitting in
-  a site they no longer operate.
+**Chosen approach: a fresh rebuild under the client's own accounts,
+rather than transferring the existing Vercel/Sanity projects.** A real
+Vercel "Transfer Project" would carry legacy history and keep the
+developer as the account that originally provisioned everything; a
+from-scratch setup under the client's own logins is cleaner and, as of
+2026-09-13, cheap to do — **0 real projects have been uploaded** (verified
+live: only the 10 seed placeholders exist), so there's no real video/photo
+content to migrate. This is the easiest point in the project's life to do
+this; it only gets harder once he's uploaded real Mux video assets.
+
+### What needs to happen, in order
+
+1. **Client creates his own accounts** — a Vercel account and a Sanity
+   account. Only he can do this (his own login/email).
+2. **GitHub**: transfer the `murvyn/amegah` repo to an account/org he
+   owns (or he forks/re-hosts it) — the brief's "custom code" ownership
+   line means the repo itself should end up his, not just the deployed
+   site.
+3. **Vercel**: import the repo into a new project under his account.
+   Framework preset is Next.js, no special build config beyond what's
+   already in `next.config.ts`/`vercel.json` (if any).
+4. **Sanity**: he creates a new project in his own org. Export the
+   current dataset (`sanity dataset export production`) **after** running
+   `npm run seed:placeholders -- --clear` (see below in this file) so the
+   export is clean — no placeholder projects, no fake clients/partners —
+   then import it into his new project's dataset
+   (`sanity dataset import <file> production`). This carries over the
+   real bio/phone/email/Instagram/clients/partners already entered, plus
+   the taxonomy (disciplines/categories), without re-typing any of it.
+5. **Mux**: add the Mux integration fresh via the Vercel Marketplace on
+   his new Vercel project — this provisions a new Mux account under him,
+   billed to his own payment method. No migration needed since no real
+   video exists yet. Redo the one-time credential entry in Studio (paste
+   the new `MUX_TOKEN_ID`/`MUX_TOKEN_SECRET` into the Video field's setup
+   screen) — see the Mux section below.
+6. **Domain**: `amegah.co` was bought through Vercel's own registrar under
+   the developer's account. Vercel supports moving a Vercel-registered
+   domain to another Vercel account/team — do this rather than
+   re-purchasing. Once moved, re-verify it's attached to his new project.
+7. **Environment variables**: re-set all of them (see the table below) in
+   his new Vercel project, using his new Sanity project ID/dataset, his
+   new Mux tokens, and a freshly generated `SANITY_REVALIDATE_SECRET`.
+8. **Sanity webhook**: recreate it from scratch in his Sanity project
+   pointing at his new Vercel deployment's `/api/revalidate` — see the
+   "Sanity webhook setup" section below for the exact config, including
+   the GROQ projection (**must be pasted by hand into the CodeMirror
+   field, not scripted** — see the gotcha documented there) and the
+   redeploy-after-adding-the-secret gotcha.
+9. **Verify end-to-end** before considering this done: publish a real
+   edit in his Studio, confirm the webhook fires (200 in his Vercel
+   project's runtime logs), and confirm his live site picks it up.
+
+Until all of this is done, the developer's accounts remain the
+production environment — don't tear down the current Vercel/Sanity/Mux
+setup until the new one is verified working end-to-end.
 
 ## Required environment variables
 

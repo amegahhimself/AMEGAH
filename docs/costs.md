@@ -5,13 +5,17 @@ costs to run once it's live. Figures below are approximate — always check
 each provider's current pricing page before quoting a client, since these
 change.
 
+**Billing model, decided 2026-09-13**: per the brief's ownership
+requirement (§9), the client ends up with his own independent Vercel,
+Sanity, and Mux accounts — see `docs/handover.md`'s ownership section for
+the full rebuild plan. He pays each provider directly on his own account,
+not through the developer.
+
 ## Open questions for the client
 
 - [x] **`amegah.com` is already taken.** Resolved 2026-09-11 — `amegah.co`
-      was registered and connected to the Vercel project instead. See
-      `docs/handover.md`'s domain entry: it was bought under the developer's
-      Vercel account, so ownership still needs to move to the client like
-      everything else there.
+      was registered instead. It will move to the client's own Vercel
+      account as part of the account rebuild in `docs/handover.md`.
 - [ ] Stay on Mux for video, or switch to a cheaper/free alternative
       (YouTube, Vimeo, Cloudflare Stream — see below)?
 - [ ] Launch hosting on Vercel's free tier, or go straight to the paid plan?
