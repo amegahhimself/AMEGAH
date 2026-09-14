@@ -22,51 +22,46 @@ live: only the 10 seed placeholders exist), so there's no real video/photo
 content to migrate. This is the easiest point in the project's life to do
 this; it only gets harder once he's uploaded real Mux video assets.
 
-### What needs to happen, in order
+### What happened, in order — done as of 2026-09-14
 
-1. **Client creates his own accounts** — a Vercel account and a Sanity
-   account. Only he can do this (his own login/email).
-2. **GitHub**: transfer the `murvyn/amegah` repo to an account/org he
-   owns (or he forks/re-hosts it) — the brief's "custom code" ownership
-   line means the repo itself should end up his, not just the deployed
-   site.
-3. **Vercel**: import the repo into a new project under his account.
-   Framework preset is Next.js, no special build config beyond what's
-   already in `next.config.ts`/`vercel.json` (if any).
-4. **Sanity**: he creates a new project in his own org. Export the
-   current dataset (`sanity dataset export production`) **after** running
-   `npm run seed:placeholders -- --clear` (see below in this file) so the
-   export is clean — no placeholder projects, no fake clients/partners —
-   then import it into his new project's dataset
-   (`sanity dataset import <file> production`). This carries over the
-   real bio/phone/email/Instagram/clients/partners already entered, plus
-   the taxonomy (disciplines/categories), without re-typing any of it.
-5. **Mux**: add the Mux integration fresh via the Vercel Marketplace on
-   his new Vercel project — this provisions a new Mux account under him,
-   billed to his own payment method. No migration needed since no real
-   video exists yet. Redo the one-time credential entry in Studio (paste
-   the new `MUX_TOKEN_ID`/`MUX_TOKEN_SECRET` into the Video field's setup
-   screen) — see the Mux section below.
-6. **Domain**: `amegah.co` was bought through Vercel's own registrar under
-   the developer's account. Vercel supports moving a Vercel-registered
-   domain to another Vercel account/team — do this rather than
-   re-purchasing. Once moved, re-verify it's attached to his new project.
-7. **Environment variables**: re-set all of them (see the table below) in
-   his new Vercel project, using his new Sanity project ID/dataset, his
-   new Mux tokens, and a freshly generated `SANITY_REVALIDATE_SECRET`.
-8. **Sanity webhook**: recreate it from scratch in his Sanity project
-   pointing at his new Vercel deployment's `/api/revalidate` — see the
-   "Sanity webhook setup" section below for the exact config, including
-   the GROQ projection (**must be pasted by hand into the CodeMirror
-   field, not scripted** — see the gotcha documented there) and the
-   redeploy-after-adding-the-secret gotcha.
-9. **Verify end-to-end** before considering this done: publish a real
-   edit in his Studio, confirm the webhook fires (200 in his Vercel
-   project's runtime logs), and confirm his live site picks it up.
+1. ✅ **Client's own accounts** — Vercel (`amegah` team) and Sanity
+   (project `tj2m3k8f`, org `olooisqqh`).
+2. ✅ **GitHub**: full repo history (main + every phase branch) pushed to
+   `amegahhimself/AMEGAH`. Made **public** on 2026-09-14 — see the note
+   below on why.
+3. ✅ **Vercel**: his project imported from that repo and deployed.
+4. ✅ **Sanity**: dataset exported from the developer's project (after
+   `npm run seed:placeholders -- --clear`) and imported into his project.
+   Real bio/phone/email/Instagram/clients/partners and the full taxonomy
+   carried over intact. (One incident along the way: the placeholder-clear
+   script also wiped several real Site Settings fields it happened to
+   share field names with — recovered via Sanity's document history API,
+   since the project's 90-day retention still had the pre-wipe revision.)
+5. ✅ **Mux**: added fresh via Vercel Marketplace on his project; one-time
+   credential entry done in his Studio. Confirmed working (real upload
+   tested).
+6. ✅ **Domain**: `amegah.co` moved from the developer's Vercel account to
+   his via `vercel domains move amegah.co amegah` — confirmed complete
+   (no longer accessible from the developer's account at all).
+7. ✅ **Environment variables**: all set in his Vercel project against his
+   own Sanity project ID/dataset, his own Mux tokens, and a freshly
+   generated `SANITY_REVALIDATE_SECRET`.
+8. ✅ **Sanity webhook**: created fresh in his project, pointing at his
+   `/api/revalidate`. Verified end-to-end — a real publish showed up on
+   the live site within seconds, no manual step.
+9. ✅ **Verified end-to-end** via a live test edit + revert.
 
-Until all of this is done, the developer's accounts remain the
-production environment — don't tear down the current Vercel/Sanity/Mux
-setup until the new one is verified working end-to-end.
+**Repo visibility**: made public on 2026-09-14 because Vercel's Hobby
+plan blocks auto-deploy for commits authored by someone who isn't a
+member of the deploying team — and the client has no local git setup, so
+having him accept/merge changes himself wasn't practical. Making the repo
+public removes that restriction with zero ongoing action needed from him.
+Nothing sensitive lives in the code itself (all real secrets are Vercel
+env vars, never committed), so this is a reasonable tradeoff — revisit if
+that ever changes.
+
+The developer's own Vercel/Sanity/Mux setup is no longer the production
+environment — his account is now the one that matters.
 
 ## Required environment variables
 
