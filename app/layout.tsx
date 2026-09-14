@@ -2,9 +2,6 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 
-import { SiteHeader } from "@/components/site-header";
-import { ContactSection } from "@/components/contact-section";
-import { getDisciplines, getSiteSettings } from "@/sanity/lib/content";
 import { SITE_URL } from "@/lib/site-url";
 
 // The one typeface used everywhere on the site, per the client's explicit
@@ -46,43 +43,13 @@ export const viewport: Viewport = {
   themeColor: "#0a0a0a",
 };
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const [disciplines, settings] = await Promise.all([
-    getDisciplines().catch(() => []),
-    getSiteSettings().catch(() => null),
-  ]);
-
-  // Person schema, not Organization — this is a solo director/DP/photographer
-  // site, and settings.name/role/instagramUrl are exactly the fields a
-  // search engine's Person schema wants. Only rendered once real data
-  // exists so an empty dataset doesn't emit a schema with no content.
-  const personSchema = settings?.name && {
-    "@context": "https://schema.org",
-    "@type": "Person",
-    name: settings.name,
-    url: SITE_URL,
-    ...(settings.role && { jobTitle: settings.role }),
-    ...(settings.instagramUrl && { sameAs: [settings.instagramUrl] }),
-  };
-
+// Header/footer/JSON-LD live in app/(site)/layout.tsx, not here — /studio
+// and /api need to stay out of that chrome entirely. See that file's doc
+// comment for why (a real layout bug, not just organizational preference).
+export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${satoshi.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col">
-        {personSchema && (
-          <script
-            type="application/ld+json"
-            // Static JSON.stringify of our own constructed object (Sanity
-            // site settings), not user-supplied markup.
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(personSchema) }}
-          />
-        )}
-        <SiteHeader
-          disciplines={disciplines.map((d) => ({ title: d.title, slug: d.slug }))}
-          settings={settings}
-        />
-        <main className="flex-1">{children}</main>
-        <ContactSection settings={settings} />
-      </body>
+      <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
 }
